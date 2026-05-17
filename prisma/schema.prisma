@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VISITEUR
+  UTILISATEUR
+  ADMINISTRATEUR
+}
+
+model Utilisateur {
+  id               Int       @id @default(autoincrement())
+  nom              String?
+  prenom           String?
+  email            String    @unique
+  motDePasse       String
+  role             Role      @default(UTILISATEUR)
+  dateCreation     DateTime  @default(now())
+  consentementRGPD Boolean   @default(false)
+
+  informations        Information[]
+  questionnaires      Questionnaire[]
+  resultatsDiagnostic ResultatDiagnostic[]
+  trackerEmotions     TrackerEmotion[]
+
+  @@map("utilisateur")
+}
+
+model Information {
+  id              Int       @id @default(autoincrement())
+  titre           String
+  texte           String    @db.Text
+  categorie       String?
+  datePublication DateTime?
+  idCreateur      Int
+  createur        Utilisateur @relation(fields: [idCreateur], references: [id], onDelete: Cascade)
+
+  @@map("information")
+}
+
+model Questionnaire {
+  id           Int       @id @default(autoincrement())
+  titre        String
+  description  String?   @db.Text
+  dateCreation DateTime  @default(now())
+  idCreateur   Int
+  createur     Utilisateur   @relation(fields: [idCreateur], references: [id], onDelete: Cascade)
+  questions    Question[]
+  diagnostics  Diagnostic[]
+
+  @@map("questionnaire")
+}
+
+model Diagnostic {
+  id              Int           @id @default(autoincrement())
+  nom             String
+  description     String?       @db.Text
+  questionnaireId Int
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  questions       Question[]
+  resultats       ResultatDiagnostic[]
+
+  @@map("diagnostic")
+}
+
+model Question {
+  id              Int            @id @default(autoincrement())
+  texte           String
+  pointsAssocies  Int
+  questionnaireId Int?
+  diagnosticId    Int?
+  questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id], onDelete: SetNull)
+  diagnostic      Diagnostic?    @relation(fields: [diagnosticId], references: [id], onDelete: SetNull)
+  reponses        Reponse[]
+
+  @@map("question")
+}
+
+model Reponse {
+  id         Int      @id @default(autoincrement())
+  texte      String
+  valeur     Int
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("reponse")
+}
+
+model ResultatDiagnostic {
+  id              Int         @id @default(autoincrement())
+  dateRealisation DateTime    @default(now())
+  score           Int
+  interpretation  String?
+  utilisateurId   Int
+  diagnosticId    Int
+  utilisateur     Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  diagnostic      Diagnostic  @relation(fields: [diagnosticId], references: [id], onDelete: Cascade)
+
+  @@map("resultat_diagnostic")
+}
+
+model TrackerEmotion {
+  id            Int         @id @default(autoincrement())
+  emotion       String
+  intensite     Int
+  note          String?     @db.Text
+  date          DateTime    @default(now())
+  utilisateurId Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@map("tracker_emotion")
+}
