@@ -22,7 +22,6 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/informations" className="hover:text-foreground">Informations</Link></li>
               <li><Link href="/diagnostic" className="hover:text-foreground">Diagnostic stress</Link></li>
-              <li><Link href="/exercices" className="hover:text-foreground">Exercices de respiration</Link></li>
             </ul>
           </div>
 

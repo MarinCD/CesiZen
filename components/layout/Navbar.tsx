@@ -14,13 +14,11 @@ export function Navbar() {
   const navLinks = [
     { href: "/informations", label: "Informations" },
     { href: "/diagnostic", label: "Diagnostic" },
-    { href: "/exercices", label: "Exercices" },
   ]
 
   const userLinks = session
     ? [
         { href: "/historique", label: "Mon historique" },
-        { href: "/tracker", label: "Tracker" },
         { href: "/profil", label: "Profil" },
       ]
     : []

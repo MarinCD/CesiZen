@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import Link from "next/link"
-import { LayoutDashboard, LineChart, Activity, User } from "lucide-react"
+import { LineChart, User } from "lucide-react"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
@@ -12,7 +12,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const navItems = [
     { href: "/historique", label: "Historique", icon: LineChart },
-    { href: "/tracker", label: "Tracker", icon: Activity },
     { href: "/profil", label: "Profil", icon: User },
   ]
 

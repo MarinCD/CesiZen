@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Heart, Wind, Brain, TrendingUp, ArrowRight } from "lucide-react"
+import { Heart, Brain, TrendingUp, ArrowRight } from "lucide-react"
 
 export default function HomePage() {
   const features = [
@@ -13,24 +13,6 @@ export default function HomePage() {
       href: "/diagnostic",
       color: "text-blue-600",
       bg: "bg-blue-50",
-    },
-    {
-      icon: Wind,
-      title: "Exercices de respiration",
-      description:
-        "Pratiquez la cohérence cardiaque, le box breathing et la respiration 4-7-8 pour vous détendre.",
-      href: "/exercices",
-      color: "text-green-600",
-      bg: "bg-green-50",
-    },
-    {
-      icon: Heart,
-      title: "Tracker d'émotions",
-      description:
-        "Suivez l'évolution de vos émotions au quotidien et visualisez vos tendances sur 7 ou 30 jours.",
-      href: "/tracker",
-      color: "text-rose-600",
-      bg: "bg-rose-50",
     },
     {
       icon: TrendingUp,
