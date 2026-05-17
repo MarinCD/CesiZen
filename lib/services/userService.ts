@@ -96,21 +96,21 @@ export async function deleteUser(id: number) {
 }
 
 export async function getGlobalStats() {
-  const [totalUtilisateurs, diagnosticsRealises, articlesPublies, entreeTrackerCeMois] =
+  const [totalUtilisateurs, diagnosticsRealises, articlesPublies, diagnosticsCeMois] =
     await Promise.all([
       prisma.utilisateur.count(),
       prisma.resultatDiagnostic.count(),
       prisma.information.count(),
-      prisma.trackerEmotion.count({
+      prisma.resultatDiagnostic.count({
         where: {
-          date: {
+          dateRealisation: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
           },
         },
       }),
     ])
 
-  return { totalUtilisateurs, diagnosticsRealises, articlesPublies, entreeTrackerCeMois }
+  return { totalUtilisateurs, diagnosticsRealises, articlesPublies, diagnosticsCeMois }
 }
 
 export async function getRecentUsers(limit = 5) {

@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "CESIZen — Santé mentale & bien-être",
   description:
-    "Plateforme de santé mentale : auto-diagnostic de stress, exercices de respiration, tracker d'émotions et ressources bien-être.",
+    "Plateforme de santé mentale : auto-diagnostic de stress basé sur l'échelle de Holmes & Rahe et ressources bien-être.",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

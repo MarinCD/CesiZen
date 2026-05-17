@@ -2,7 +2,7 @@ import { getGlobalStats, getRecentUsers, getRecentDiagnostics } from "@/lib/serv
 import { StatsCard } from "@/components/admin/StatsCard"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Brain, FileText, Activity } from "lucide-react"
+import { Users, Brain, FileText, TrendingUp } from "lucide-react"
 
 export default async function AdminDashboardPage() {
   const [stats, recentUsers, recentDiagnostics] = await Promise.all([
@@ -48,9 +48,9 @@ export default async function AdminDashboardPage() {
           bg="bg-green-50"
         />
         <StatsCard
-          title="Entrées tracker (ce mois)"
-          value={stats.entreeTrackerCeMois}
-          icon={Activity}
+          title="Diagnostics ce mois"
+          value={stats.diagnosticsCeMois}
+          icon={TrendingUp}
           color="text-rose-600"
           bg="bg-rose-50"
         />
