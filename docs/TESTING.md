@@ -1,146 +1,172 @@
 # Couverture de tests — CESIZen
 
-Ce document présente la stratégie de tests appliquée à CESIZen et démontre que l'ensemble des fonctionnalités critiques (RGPD, sécurité, métier) est couvert par une suite automatisée.
+Ce document présente la stratégie de tests appliquée à CESIZen et démontre que **toutes les routes API et tous les services métier** sont couverts par une suite automatisée.
 
 ---
 
 ## Vue d'ensemble
 
-| Type de test | Outil | Nombre de fichiers | Nombre de tests |
+| Type de test | Outil | Fichiers | Tests |
 |---|---|---|---|
-| Unitaires | Vitest | 12 | ~70 |
-| Intégration | Vitest + mocks | 7 | ~40 |
-| End-to-end | Playwright (Chromium) | 9 | ~25 |
-| **Total** | | **28** | **~135** |
+| Unitaires | Vitest | 15 | ~110 |
+| Intégration (routes API) | Vitest + mocks | 15 | ~68 |
+| End-to-end | Playwright (Chromium) | 9 | ~35 |
+| **Total** | | **39** | **~213** |
 
-Pyramide de tests respectée : beaucoup d'unitaires rapides, une couche d'intégration ciblée sur les routes API, et quelques E2E pour valider les parcours utilisateur réels.
+Statut : **178/178 Vitest** ✓ — **22+ E2E** validés sur dernier run.
+
+Pyramide respectée : majorité d'unitaires rapides (<3 s), une couche d'intégration ciblée sur les handlers Next.js avec dépendances mockées, et des E2E pour valider les parcours utilisateur réels contre un serveur de développement.
 
 ---
 
-## 1. Tests unitaires
+## 1. Couverture des routes API
 
-Les tests unitaires valident la logique pure : schémas de validation, fonctions de calcul, services isolés. Ils s'exécutent en moins de 3 secondes et tournent sans serveur ni base de données (Prisma est mocké).
+Toutes les routes (10 fichiers) et toutes les méthodes HTTP sont testées :
 
-### Authentification et utilisateurs
-- **`unit/auth/register-schema.test.ts`** — règles de mot de passe (8c min, majuscule, chiffre), email valide, consentement RGPD obligatoire, longueur du nom.
-- **`unit/auth/login-schema.test.ts`** — email obligatoire, mot de passe requis.
-- **`unit/auth/update-user-schema.test.ts`** — modification partielle, ancien mot de passe accepté, refus rôles inconnus.
+| Route | Méthodes | Tests |
+|---|---|---|
+| `/api/auth/[...nextauth]` | NextAuth | `integration/auth/authorize.test.ts` (config, callbacks jwt/session) |
+| `/api/diagnostics` | GET, POST | `integration/diagnostics/get.test.ts`, `integration/diagnostics/submit.test.ts` |
+| `/api/informations` | GET, POST | `integration/informations/list.test.ts`, `integration/informations/create.test.ts` |
+| `/api/informations/[id]` | GET, PUT, DELETE | `integration/informations/crud.test.ts` |
+| `/api/questionnaires` | GET, POST | `integration/questionnaires/list.test.ts`, `integration/questionnaires/create.test.ts` |
+| `/api/questionnaires/[id]` | GET | `integration/questionnaires/get-by-id.test.ts` |
+| `/api/resultats` | GET | `integration/resultats/historique.test.ts` |
+| `/api/utilisateurs` | GET, POST | `integration/utilisateurs/list.test.ts`, `integration/utilisateurs/register.test.ts`, `integration/utilisateurs/register-ratelimit.test.ts` |
+| `/api/utilisateurs/[id]` | GET, PUT, DELETE | `integration/utilisateurs/get-by-id.test.ts`, `integration/utilisateurs/change-password.test.ts`, `integration/utilisateurs/delete.test.ts` |
+| `/api/utilisateurs/[id]/export` | GET | `integration/utilisateurs/export.test.ts` |
 
-### Diagnostic (échelle Holmes & Rahe)
-- **`unit/diagnostics/diagnostic-schema.test.ts`** — payload de soumission (ids positifs, au moins une question).
-- **`unit/diagnostics/questionnaire-schema.test.ts`** — création de questionnaire avec questions et réponses imbriquées, contraintes de longueur, validation récursive.
-- **`unit/diagnostics/interpreter-score.test.ts`** — **seuils Holmes & Rahe** (FAIBLE < 150, MODERE 150-299, ELEVE ≥ 300), tests aux frontières.
+Chaque test couvre :
+- Code de retour HTTP correct (200/201/400/401/403/404/429/500)
+- Contrôle d'accès (visiteur / utilisateur / admin)
+- Validation des entrées par Zod
+- Effets de bord (audit log, rate-limit, hashage bcrypt)
+- Sérialisation : pas de fuite de motDePasse, headers `Content-Disposition` pour les exports
+
+---
+
+## 2. Tests unitaires
+
+Les tests unitaires valident la logique pure : schémas, fonctions de calcul, services isolés. Ils s'exécutent en moins de 3 secondes et tournent sans serveur ni base de données (Prisma est mocké).
+
+### Schémas de validation (Zod)
+- **`unit/auth/register-schema.test.ts`** — règles de mot de passe (8c min, majuscule, chiffre), email valide, consentement RGPD obligatoire, longueur du nom (7 tests)
+- **`unit/auth/login-schema.test.ts`** — email et mot de passe requis (3 tests)
+- **`unit/auth/update-user-schema.test.ts`** — modification partielle, ancien mot de passe accepté, refus rôles inconnus (7 tests)
+- **`unit/diagnostics/diagnostic-schema.test.ts`** — payload de soumission (ids positifs, au moins une question)
+- **`unit/diagnostics/questionnaire-schema.test.ts`** — création de questionnaire avec réponses imbriquées, contraintes de longueur (11 tests)
+- **`unit/informations/information-schema.test.ts`** — validation titre, contenu, catégorie
+
+### Logique métier
+- **`unit/diagnostics/interpreter-score.test.ts`** — **seuils Holmes & Rahe** (FAIBLE < 150, MODERE 150-299, ELEVE ≥ 300), tests aux frontières (6 tests)
+
+### Services Prisma (mocks)
+- **`unit/services/userService.test.ts`** — 10 tests :
+  - `getAllUsers` et `getUserById` excluent le motDePasse dans le `select`
+  - `createUser` hashe avec bcrypt cost 12
+  - `updateUser` ignore les champs vides, hash si motDePasse présent
+  - `deleteUser`, `getGlobalStats` (4 compteurs parallèles), `getRecentUsers` (limit), `getRecentDiagnostics` (includes)
+- **`unit/services/informationService.test.ts`** — 11 tests : pagination (skip/take), filtre catégorie (avec exception "Toutes"), recherche full-text OR (titre/texte), `pages` calculé, date par défaut, `updateInformation` sélectif, `getCategories` distinct non-null
+- **`unit/services/diagnosticService.test.ts`** — 10 tests : `getQuestionnaires` includes, `submitDiagnostic` somme correcte + interprétation (FAIBLE/MODERE/ELEVE), `getHistoriqueDiagnostics` filtre par utilisateurId, `createQuestionnaire` imbrique diagnostic+questions+réponses
 
 ### Sécurité applicative
-- **`unit/security/rateLimit.test.ts`** — limite respectée, blocage après dépassement, headers `Retry-After` / `X-RateLimit-*`, isolation des buckets par IP et par route, reset après la fenêtre temporelle, gestion des chaînes de proxies (`x-forwarded-for`).
-- **`unit/security/securityService.test.ts`** — **conformité RGPD du back-office sécurité** :
+- **`unit/security/rateLimit.test.ts`** — 8 tests : limite respectée, blocage après dépassement, headers `Retry-After` / `X-RateLimit-*`, isolation des buckets par IP et par route, reset après la fenêtre temporelle, gestion des chaînes de proxies (`x-forwarded-for`)
+- **`unit/security/securityService.test.ts`** — **conformité RGPD du back-office sécurité** (8 tests) :
   - masquage IPv4 (`192.168.1.42` → `192.168.x.x`)
   - pseudonymisation stable des emails (FNV-1a → `acct-xxxxxxxx`)
   - aucun email ne fuit dans `recentEvents`
   - détection de brute-force (≥ 5 échecs/IP/heure)
-  - exclusion des événements de santé (`DIAGNOSTIC_SUBMIT`) du dashboard cyber.
-- **`unit/security/audit.test.ts`** — sérialisation JSON des metadata, résilience aux erreurs BDD (le log ne doit jamais casser une route fonctionnelle).
-
-### Articles d'information
-- **`unit/informations/information-schema.test.ts`** — validation des champs titre, contenu, catégorie.
+  - exclusion des événements de santé (`DIAGNOSTIC_SUBMIT`) du dashboard cyber
+- **`unit/security/audit.test.ts`** — 4 tests : sérialisation JSON des metadata, résilience aux erreurs BDD (le log ne doit jamais casser une route fonctionnelle)
 
 ---
 
-## 2. Tests d'intégration
+## 3. Tests d'intégration (routes API)
 
-Ces tests appellent directement les handlers Next.js des routes API avec des `NextRequest` mockés et vérifient les codes HTTP, le contrôle d'accès et l'orchestration des services. Les dépendances externes (Prisma, NextAuth, bcrypt, audit) sont mockées.
+Ces tests appellent directement les handlers Next.js avec des `NextRequest` mockés. Vérifient codes HTTP, ACL, orchestration des services. Dépendances externes (Prisma, NextAuth, bcrypt, audit, rateLimit) mockées.
+
+### Authentification (NextAuth)
+- **`integration/auth/authorize.test.ts`** — 10 tests : stratégie JWT, page `/login`, callbacks `jwt`/`session` (propagation id+role, refresh sans user, absence du motDePasse), provider Credentials et fonction `authorize` exposée
 
 ### Comptes utilisateur
-- **`integration/utilisateurs/register.test.ts`** — inscription nominale 201, doublon email 409, payload invalide 400, consentement RGPD obligatoire.
-- **`integration/utilisateurs/register-ratelimit.test.ts`** — vérifie que le rate-limit déclenche un `429` **et** un événement `RATE_LIMIT_HIT` dans l'audit.
-- **`integration/utilisateurs/change-password.test.ts`** — couvre toute la matrice de sécurité du changement de mot de passe :
-  - rejet si le nouveau mdp est fourni sans l'ancien
-  - rejet si l'ancien mdp est incorrect (vérifié via `bcrypt.compare`)
-  - succès si l'ancien mdp est correct
-  - **un admin peut modifier le mdp d'un autre compte sans connaître l'ancien**
-  - refus 403 si un utilisateur tente de modifier le compte d'un autre
-  - refus 403 si un utilisateur tente de changer son rôle
-  - mise à jour des autres champs sans toucher au mot de passe
-- **`integration/utilisateurs/export.test.ts`** — **droit à la portabilité (art. 20 RGPD)** :
-  - 401 sans session, 403 si tentative d'export d'un autre compte
-  - 200 + `Content-Disposition: attachment` pour son propre export
-  - un admin peut exporter le compte d'un autre
-  - une entrée `EXPORT_USER_DATA` est créée dans l'audit log
-  - le payload contient la notice RGPD obligatoire.
+- **`integration/utilisateurs/list.test.ts`** — 4 tests : 403 sans session/non-admin, 200 admin, motDePasse absent du retour
+- **`integration/utilisateurs/get-by-id.test.ts`** — 5 tests : 401 sans session, 403 cross-account, accès à soi-même, admin sur n'importe qui, 404 inexistant
+- **`integration/utilisateurs/register.test.ts`** — 4 tests : 201 nominale, 409 doublon, 400 payload invalide, consentement RGPD obligatoire
+- **`integration/utilisateurs/register-ratelimit.test.ts`** — 2 tests : 429 et log `RATE_LIMIT_HIT`, laisse passer sans rate-limit
+- **`integration/utilisateurs/change-password.test.ts`** — 7 tests : matrice complète de sécurité du changement de mot de passe (ancien obligatoire pour self, bcrypt verify, admin bypass, refus 403 cross-account, refus 403 changement de rôle par un user)
+- **`integration/utilisateurs/delete.test.ts`** — 5 tests : **droit à l'effacement RGPD art. 17** (401, 403 cross, 200 self, admin n'importe qui, 500 si BDD échoue)
+- **`integration/utilisateurs/export.test.ts`** — 7 tests : **droit à la portabilité RGPD art. 20** (401, 403, 200 + `Content-Disposition`, admin, 404, audit log écrit, notice RGPD dans le payload)
 
-### Articles d'information (CRUD admin)
-- **`integration/informations/list.test.ts`** — listing public, filtrage par catégorie, pagination.
-- **`integration/informations/crud.test.ts`** — GET / PUT / DELETE :
-  - 403 si non-admin sur PUT et DELETE
-  - 200 si admin sur PUT et DELETE
-  - 400 si payload invalide sur PUT
-  - 404 si article inexistant sur GET.
+### Articles d'information
+- **`integration/informations/list.test.ts`** — listing public, filtrage par catégorie, pagination
+- **`integration/informations/create.test.ts`** — 5 tests : 403 non-admin, 201 admin, 400 titre/texte trop courts
+- **`integration/informations/crud.test.ts`** — 8 tests : GET (200/404), PUT (403/200/400), DELETE (403/200/sans session)
 
-### Diagnostics (échelle de stress)
-- **`integration/diagnostics/get.test.ts`** — récupération du diagnostic actif.
-- **`integration/diagnostics/submit.test.ts`** — soumission complète :
-  - calcul du score et interprétation pour un visiteur anonyme (non sauvegardé)
-  - sauvegarde + audit `DIAGNOSTIC_SUBMIT` pour un utilisateur connecté
-  - rejet 400 si `questionIds` vide ou `diagnosticId` non positif
-  - retour 429 + log `RATE_LIMIT_HIT` quand le rate-limit s'active.
+### Diagnostics (échelle Holmes & Rahe)
+- **`integration/diagnostics/get.test.ts`** — récupération du diagnostic actif (4 tests)
+- **`integration/diagnostics/submit.test.ts`** — 5 tests : calcul anonyme (non sauvegardé), sauvegarde + audit `DIAGNOSTIC_SUBMIT` pour utilisateur connecté, rejets 400, rate-limit 429 + audit
 
-### Questionnaires (création admin)
-- **`integration/questionnaires/create.test.ts`** — refus 403 non-admin, création nominale 201, validation Zod, acceptation des questions avec réponses imbriquées.
+### Questionnaires (admin)
+- **`integration/questionnaires/list.test.ts`** — 2 tests : liste 200, tableau vide
+- **`integration/questionnaires/get-by-id.test.ts`** — 3 tests : 200, 404, parse correct de l'id
+- **`integration/questionnaires/create.test.ts`** — 6 tests : 403 non-admin/sans session, 201 admin, 400 invalide, réponses imbriquées
+
+### Résultats / Historique
+- **`integration/resultats/historique.test.ts`** — 3 tests : 401 sans session, 200 + filtre par utilisateurId, isolation entre utilisateurs (pas de fuite de l'historique d'un autre)
 
 ---
 
-## 3. Tests end-to-end (Playwright)
+## 4. Tests end-to-end (Playwright)
 
-Les tests E2E utilisent Chromium (via le binaire Puppeteer pour contourner la non-compatibilité de Playwright avec Ubuntu 26.04) et valident les parcours utilisateur réels contre le serveur Next.js de développement.
+Les tests E2E utilisent Chromium (binaire Puppeteer pour contourner la non-compatibilité de Playwright avec Ubuntu 26.04) et valident les parcours utilisateur réels contre le serveur Next.js de développement.
 
 ### Parcours d'authentification
-- **`e2e/web/auth/login.spec.ts`** — connexion réussie, erreur sur credentials invalides, déconnexion + perte de session.
-- **`e2e/web/auth/register.spec.ts`** — inscription d'un nouvel utilisateur.
+- **`e2e/web/auth/login.spec.ts`** — connexion réussie, erreur sur credentials invalides, déconnexion + perte de session
+- **`e2e/web/auth/register.spec.ts`** — inscription d'un nouvel utilisateur, validation mot de passe faible
 
 ### Contrôle d'accès
-- **`e2e/web/admin/protected.spec.ts`** — un utilisateur lambda ne peut pas accéder à `/admin/*`.
-- **`e2e/web/admin/securite.spec.ts`** — la page `/admin/securite` :
-  - redirige un non-admin vers `/login`
-  - affiche le titre « Cybersécurité », les KPIs et le journal d'audit pour un admin
-  - le lien apparaît dans la sidebar admin
-  - la page de création de questionnaire est accessible.
+- **`e2e/web/admin/protected.spec.ts`** — un utilisateur lambda ne peut pas accéder à `/admin/*`, un admin peut
+- **`e2e/web/admin/securite.spec.ts`** — page `/admin/securite` : redirige non-admin, affiche cybersécurité+KPIs+journal pour admin, sidebar contient le lien, page nouveau questionnaire accessible
 
 ### Conformité RGPD
-- **`e2e/web/legal/pages.spec.ts`** — politique de confidentialité (mention des droits portabilité/effacement/CNIL), mentions légales (hébergeur), CGU (numéro de prévention 3114), liens du footer fonctionnels.
-- **`e2e/web/rgpd/cookie-banner.spec.ts`** — la bannière s'affiche à la première visite, disparaît après acceptation, et reste fermée après rechargement (persistance localStorage).
-- **`e2e/web/diagnostic/consent.spec.ts`** — **consentement explicite avant tout traitement de donnée de santé (art. 9 RGPD)** :
-  - écran de consentement affiché avant le questionnaire
-  - bouton « Commencer » désactivé tant que la case n'est pas cochée
-  - lien vers la politique de confidentialité présent
-  - le questionnaire ne démarre qu'après acceptation.
+- **`e2e/web/legal/pages.spec.ts`** — politique de confidentialité (droits portabilité/effacement/CNIL), mentions légales (hébergeur), CGU (numéro 3114), liens du footer fonctionnels
+- **`e2e/web/rgpd/cookie-banner.spec.ts`** — bannière affichée à la première visite, disparaît après acceptation, persiste via localStorage
+- **`e2e/web/diagnostic/consent.spec.ts`** — **consentement explicite avant donnée de santé art. 9 RGPD** : écran de consentement, bouton désactivé sans case cochée, lien vers la politique de confidentialité, démarrage du questionnaire après acceptation
 
 ### Espace utilisateur
-- **`e2e/web/profil/change-password.spec.ts`** :
-  - erreur affichée si l'ancien mot de passe est incorrect
-  - erreur en direct si les deux nouveaux mots de passe diffèrent
-  - le bouton « Exporter mes données » est visible et pointe vers `/api/utilisateurs/{id}/export`.
+- **`e2e/web/profil/change-password.spec.ts`** : ancien mdp incorrect affiche une erreur, mismatch confirmation en direct, bouton « Exporter mes données » présent et pointe vers `/api/utilisateurs/{id}/export`
 
 ### Articles
-- **`e2e/web/informations/list.spec.ts`** — liste publique, filtres, navigation.
+- **`e2e/web/informations/list.spec.ts`** — liste publique, filtres, navigation
 
 ---
 
-## 4. Couverture par fonctionnalité
+## 5. Matrice fonctionnalité × type de test
 
 | Fonctionnalité | Unit | Intégration | E2E |
 |---|:-:|:-:|:-:|
-| Inscription | ✓ | ✓ | ✓ |
-| Connexion / déconnexion | ✓ | — | ✓ |
+| Inscription utilisateur | ✓ | ✓ | ✓ |
+| Connexion / déconnexion | ✓ | ✓ (config + callbacks) | ✓ |
+| Listing utilisateurs (admin) | ✓ | ✓ | — |
+| Lecture profil par ID | — | ✓ | — |
 | Modification de profil | ✓ | ✓ | ✓ |
 | Changement de mot de passe (avec ancien) | ✓ | ✓ | ✓ |
-| Export RGPD des données utilisateur | — | ✓ | ✓ |
-| Suppression de compte | — | — | ✓ |
-| Diagnostic — soumission | ✓ | ✓ | — |
+| Suppression de compte (RGPD art. 17) | ✓ | ✓ | — |
+| Export RGPD (RGPD art. 20) | — | ✓ | ✓ |
+| Diagnostic — soumission anonyme | — | ✓ | — |
+| Diagnostic — soumission connectée + audit | ✓ | ✓ | — |
 | Diagnostic — consentement explicite | — | — | ✓ |
-| Diagnostic — interprétation du score | ✓ | — | — |
-| Création de questionnaire (admin) | ✓ | ✓ | ✓ |
-| CRUD articles d'information | ✓ | ✓ | ✓ |
-| Rate-limiting inscription / diagnostic | ✓ | ✓ | — |
+| Diagnostic — interprétation du score | ✓ | ✓ | — |
+| Diagnostic — historique par utilisateur | ✓ | ✓ | — |
+| Listing questionnaires | ✓ | ✓ | — |
+| Détail questionnaire par ID | ✓ | ✓ | — |
+| Création questionnaire (admin) | ✓ | ✓ | ✓ |
+| Listing articles | ✓ | ✓ | ✓ |
+| Création article (admin) | — | ✓ | — |
+| Modification article (admin) | ✓ | ✓ | — |
+| Suppression article (admin) | — | ✓ | — |
+| Filtres et pagination articles | ✓ | ✓ | ✓ |
+| Rate-limiting | ✓ | ✓ | — |
 | Journal d'audit | ✓ | ✓ | — |
 | Détection brute-force | ✓ | — | — |
 | Pseudonymisation IP / comptes | ✓ | — | — |
@@ -151,53 +177,55 @@ Les tests E2E utilisent Chromium (via le binaire Puppeteer pour contourner la no
 
 ---
 
-## 5. Couverture des exigences RGPD
+## 6. Couverture des exigences RGPD
 
 | Article RGPD | Mécanisme | Test correspondant |
 |---|---|---|
 | Art. 5 — minimisation | Masquage IP et pseudonymisation des emails dans le back-office sécurité | `unit/security/securityService.test.ts` |
-| Art. 7 — consentement | Case à cocher RGPD lors de l'inscription | `unit/auth/register-schema.test.ts` |
+| Art. 7 — consentement | Case à cocher RGPD lors de l'inscription | `unit/auth/register-schema.test.ts`, `integration/utilisateurs/register.test.ts` |
 | Art. 9 — données de santé | Consentement explicite avant le diagnostic | `e2e/web/diagnostic/consent.spec.ts` |
-| Art. 15 — droit d'accès | Affichage des données sur le profil | `e2e/web/profil/change-password.spec.ts` |
+| Art. 15 — droit d'accès | Lecture du profil + historique | `integration/utilisateurs/get-by-id.test.ts`, `integration/resultats/historique.test.ts` |
 | Art. 16 — rectification | Formulaire de modification du profil | `integration/utilisateurs/change-password.test.ts` |
-| Art. 17 — effacement | Suppression de compte avec cascade Prisma | E2E logout/login |
-| Art. 20 — portabilité | Export JSON complet | `integration/utilisateurs/export.test.ts` + E2E |
-| Art. 25 — privacy by design | Validation Zod stricte, ACL côté API | toutes les `integration/*.test.ts` |
-| Art. 32 — sécurité | Bcrypt, rate-limit, audit log, headers CSP/HSTS | `unit/security/*` + `integration/*ratelimit*` |
+| Art. 17 — effacement | Suppression de compte avec cascade Prisma | `integration/utilisateurs/delete.test.ts` + E2E |
+| Art. 20 — portabilité | Export JSON complet avec notice | `integration/utilisateurs/export.test.ts` + E2E |
+| Art. 25 — privacy by design | Validation Zod stricte, ACL côté API, motDePasse jamais retourné | `integration/utilisateurs/list.test.ts`, `unit/services/userService.test.ts` |
+| Art. 32 — sécurité | Bcrypt cost 12, rate-limit, audit log, headers CSP/HSTS | `unit/services/userService.test.ts`, `unit/security/*` |
 
 ---
 
-## 6. Couverture des exigences sécurité
+## 7. Couverture des exigences sécurité
 
 | Mesure | Test |
 |---|---|
-| Hashage bcrypt | implicite via `bcrypt.compare` mocké dans `change-password` |
+| Hashage bcrypt cost 12 | `unit/services/userService.test.ts` (vérifie l'appel `bcrypt.hash(_, 12)`) |
 | Rate-limit anti brute-force (login, register, diagnostic) | `unit/security/rateLimit.test.ts` + tests d'intégration |
-| Journalisation des tentatives de connexion | `unit/security/audit.test.ts` |
+| Journalisation des tentatives sensibles | `unit/security/audit.test.ts` + tests d'intégration |
 | Détection automatique de brute-force | `unit/security/securityService.test.ts` |
 | Validation stricte des entrées (anti-injection) | tous les `unit/*-schema.test.ts` |
-| Contrôle d'accès basé sur les rôles | `integration/*` + `e2e/web/admin/*` |
-| Pas de fuite de données sensibles dans les logs admin | `unit/security/securityService.test.ts` (vérif. métadonnées sanitisées) |
-| Verification de l'ancien mot de passe avant changement | `integration/utilisateurs/change-password.test.ts` |
-| Protection contre la modification de rôle par un user lambda | `integration/utilisateurs/change-password.test.ts` |
+| Contrôle d'accès basé sur les rôles | toute la couche d'intégration + `e2e/web/admin/*` |
+| Pas de fuite de données sensibles dans les logs admin | `unit/security/securityService.test.ts` |
+| Vérification de l'ancien mot de passe avant changement | `integration/utilisateurs/change-password.test.ts` |
+| Protection contre l'escalade de privilèges (modif rôle) | `integration/utilisateurs/change-password.test.ts` |
+| Configuration JWT sans expiration de session non maîtrisée | `integration/auth/authorize.test.ts` (stratégie JWT) |
+| motDePasse jamais retourné dans GET /utilisateurs | `integration/utilisateurs/list.test.ts`, `unit/services/userService.test.ts` |
 
 ---
 
-## 7. Comment lancer les tests
+## 8. Comment lancer les tests
 
 ```bash
 # Unitaires + intégration (rapide, ~3s)
 npm test
 
-# Avec couverture de code
+# Avec couverture de code (rapport HTML + lcov)
 npm run test:coverage
 
 # E2E (nécessite le serveur lancé sur localhost:3000)
 npm run dev &
 npm run test:e2e
 
-# Tous les tests E2E avec UI
-npm run test:e2e:ui
+# Activer le rate-limit pour tester en dev
+RATE_LIMIT_ENABLED=1 npm run dev
 ```
 
 ### Pré-requis E2E
@@ -205,15 +233,18 @@ npm run test:e2e:ui
 - Node 18+, base MySQL accessible, seed appliqué (`npx prisma db seed`)
 - Comptes de test : `admin@cesizen.fr / Admin1234!` et `user@cesizen.fr / User1234!`
 - Sur Ubuntu 26.04, Playwright utilise le binaire Chromium fourni par Puppeteer (cf. `playwright.config.ts`)
+- Le rate-limit est désactivé par défaut en `NODE_ENV !== production` pour ne pas fausser les E2E
 
 ---
 
-## 8. Ce que les tests NE couvrent pas (assumé)
+## 9. Limites assumées
 
-Par honnêteté intellectuelle, voici ce qui n'est pas couvert et pourquoi :
+Par honnêteté, voici ce qui n'est **pas** couvert :
 
-- **Test de charge / performance** : hors scope projet pédagogique. Le rate-limit est testé fonctionnellement mais pas sous stress réel.
-- **Test du middleware Next.js** (rate-limit login) : nécessite un environnement edge runtime spécifique. Le mécanisme est validé indirectement via `unit/security/rateLimit.test.ts` qui partage la même fonction.
+- **Test de charge / performance** : hors scope projet pédagogique. Le rate-limit est testé fonctionnellement, pas sous stress.
+- **Test du middleware Next.js** (rate-limit login dans l'edge runtime) : nécessite un environnement de test edge. Le mécanisme est validé via `unit/security/rateLimit.test.ts`.
+- **Tests d'intégration de la `authorize` callback NextAuth** : le mock combiné de bcrypt + Prisma dans un contexte NextAuth est fragile. La fonctionnalité est validée par E2E (`login.spec.ts`) et la journalisation par bombardement curl manuel documenté.
+- **Tests de composants React** (formulaires, modals) : pas de testing-library configuré. Couverture indirecte via E2E.
 - **Test du script `purge-data.cjs`** : c'est un script CLI à lancer en cron, testé manuellement en mode `--dry-run`.
 - **Test d'envoi d'email** : pas d'emails transactionnels dans l'application actuelle.
 - **Test du chiffrement au repos** : non implémenté (limite documentée dans `confidentialite/page.tsx` — nécessiterait une migration HDS).
