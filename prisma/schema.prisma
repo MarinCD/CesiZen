@@ -104,6 +104,21 @@ model ResultatDiagnostic {
   @@map("resultat_diagnostic")
 }
 
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  actorId   Int?
+  targetId  Int?
+  ip        String?
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetId])
+  @@index([action])
+  @@map("audit_log")
+}
+
 model TrackerEmotion {
   id            Int         @id @default(autoincrement())
   emotion       String

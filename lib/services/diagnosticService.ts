@@ -82,3 +82,44 @@ export async function getFirstDiagnostic() {
     },
   })
 }
+
+export async function createQuestionnaire(data: {
+  titre: string
+  description?: string
+  diagnosticNom: string
+  idCreateur: number
+  questions: Array<{
+    texte: string
+    pointsAssocies: number
+    reponses?: Array<{ texte: string; valeur: number }>
+  }>
+}) {
+  return prisma.questionnaire.create({
+    data: {
+      titre: data.titre,
+      description: data.description,
+      idCreateur: data.idCreateur,
+      diagnostics: {
+        create: {
+          nom: data.diagnosticNom,
+          description: data.description,
+          questions: {
+            create: data.questions.map((q) => ({
+              texte: q.texte,
+              pointsAssocies: q.pointsAssocies,
+              reponses: q.reponses && q.reponses.length > 0
+                ? { create: q.reponses.map((r) => ({ texte: r.texte, valeur: r.valeur })) }
+                : undefined,
+            })),
+          },
+        },
+      },
+      questions: {
+        create: data.questions.map((q) => ({
+          texte: q.texte,
+          pointsAssocies: q.pointsAssocies,
+        })),
+      },
+    },
+  })
+}

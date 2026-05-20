@@ -1,9 +1,13 @@
 import Link from "next/link"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { getInformations, getCategories } from "@/lib/services/informationService"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar, ArrowRight, Search } from "lucide-react"
+import { DeleteArticleButton } from "@/components/admin/DeleteArticleButton"
+import { ArticleFormModal } from "@/components/admin/ArticleFormModal"
 
 interface Props {
   searchParams: { search?: string; categorie?: string; page?: string }
@@ -14,18 +18,23 @@ export default async function InformationsPage({ searchParams }: Props) {
   const categorie = searchParams.categorie || ""
   const page = parseInt(searchParams.page || "1")
 
-  const [{ items, total, pages }, categories] = await Promise.all([
+  const [{ items, total, pages }, categories, session] = await Promise.all([
     getInformations({ search, categorie, page }),
     getCategories(),
+    getServerSession(authOptions),
   ])
+  const isAdmin = (session?.user as any)?.role === "ADMINISTRATEUR"
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Ressources bien-être</h1>
-        <p className="text-muted-foreground">
-          Articles et guides sur la santé mentale, le stress et le bien-être.
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Ressources bien-être</h1>
+          <p className="text-muted-foreground">
+            Articles et guides sur la santé mentale, le stress et le bien-être.
+          </p>
+        </div>
+        {isAdmin && <ArticleFormModal mode="create" />}
       </div>
 
       {/* Filtres */}
@@ -83,10 +92,26 @@ export default async function InformationsPage({ searchParams }: Props) {
           {items.map((article) => (
             <Card key={article.id} className="hover:shadow-md transition-shadow flex flex-col">
               <CardHeader className="pb-2">
-                {article.categorie && (
-                  <Badge variant="secondary" className="w-fit mb-2">{article.categorie}</Badge>
-                )}
-                <CardTitle className="text-lg leading-snug">{article.titre}</CardTitle>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    {article.categorie && (
+                      <Badge variant="secondary" className="w-fit mb-2">{article.categorie}</Badge>
+                    )}
+                    <CardTitle className="text-lg leading-snug">{article.titre}</CardTitle>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <ArticleFormModal
+                        mode="edit"
+                        articleId={article.id}
+                        triggerVariant="ghost"
+                        triggerSize="icon"
+                        ariaLabel={`Modifier ${article.titre}`}
+                      />
+                      <DeleteArticleButton id={article.id} titre={article.titre} />
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="flex flex-col flex-1">
                 <p className="text-sm text-muted-foreground line-clamp-3 flex-1">

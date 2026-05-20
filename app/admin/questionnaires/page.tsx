@@ -1,18 +1,26 @@
 import Link from "next/link"
 import { getQuestionnaires } from "@/lib/services/diagnosticService"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ClipboardList, ChevronRight } from "lucide-react"
+import { ClipboardList, ChevronRight, Plus } from "lucide-react"
 
 export default async function AdminQuestionnairesPage() {
   const questionnaires = await getQuestionnaires()
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Questionnaires</h1>
-        <p className="text-muted-foreground mt-1">Gérez les questionnaires de diagnostic.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Questionnaires</h1>
+          <p className="text-muted-foreground mt-1">Gérez les questionnaires de diagnostic.</p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/questionnaires/nouveau">
+            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+            Nouveau questionnaire
+          </Link>
+        </Button>
       </div>
 
       <div className="space-y-4">

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getAllUsers, createUser } from "@/lib/services/userService"
 import { registerSchema } from "@/lib/validations/userSchema"
+import { rateLimit } from "@/lib/rateLimit"
+import { logAudit } from "@/lib/audit"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -15,6 +17,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { windowMs: 60_000, max: 5, keyPrefix: "register" })
+  if (limited) {
+    await logAudit({
+      action: "RATE_LIMIT_HIT",
+      ip: req.headers.get("x-forwarded-for") || null,
+      metadata: { route: "register" },
+    })
+    return limited
+  }
+
   const body = await req.json()
 
   const result = registerSchema.safeParse(body)

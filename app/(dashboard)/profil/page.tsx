@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { AlertCircle, CheckCircle, Trash2 } from "lucide-react"
+import { AlertCircle, CheckCircle, Trash2, Download } from "lucide-react"
 
 export default function ProfilPage() {
-  const { data: session, update } = useSession()
+  const { data: session } = useSession()
   const user = session?.user as any
 
-  const [form, setForm] = useState({ prenom: "", nom: "", email: "", motDePasse: "" })
+  const [form, setForm] = useState({ prenom: "", nom: "", email: "", ancienMotDePasse: "", motDePasse: "", confirmMotDePasse: "" })
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -21,7 +21,7 @@ export default function ProfilPage() {
   useEffect(() => {
     if (user) {
       const [prenom = "", nom = ""] = (user.name || "").split(" ")
-      setForm({ prenom, nom, email: user.email || "", motDePasse: "" })
+      setForm({ prenom, nom, email: user.email || "", ancienMotDePasse: "", motDePasse: "", confirmMotDePasse: "" })
     }
   }, [session])
 
@@ -32,7 +32,20 @@ export default function ProfilPage() {
     setLoading(true)
 
     const body: any = { prenom: form.prenom, nom: form.nom, email: form.email }
-    if (form.motDePasse) body.motDePasse = form.motDePasse
+    if (form.motDePasse || form.confirmMotDePasse || form.ancienMotDePasse) {
+      if (!form.ancienMotDePasse) {
+        setLoading(false)
+        setError("Veuillez saisir votre mot de passe actuel pour le modifier.")
+        return
+      }
+      if (form.motDePasse !== form.confirmMotDePasse) {
+        setLoading(false)
+        setError("La confirmation du nouveau mot de passe ne correspond pas.")
+        return
+      }
+      body.ancienMotDePasse = form.ancienMotDePasse
+      body.motDePasse = form.motDePasse
+    }
 
     const res = await fetch(`/api/utilisateurs/${user.id}`, {
       method: "PUT",
@@ -43,7 +56,7 @@ export default function ProfilPage() {
     setLoading(false)
     if (res.ok) {
       setSuccess("Profil mis à jour avec succès.")
-      setForm((f) => ({ ...f, motDePasse: "" }))
+      setForm((f) => ({ ...f, ancienMotDePasse: "", motDePasse: "", confirmMotDePasse: "" }))
     } else {
       const data = await res.json()
       setError(data.error || "Erreur lors de la mise à jour.")
@@ -58,7 +71,7 @@ export default function ProfilPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="space-y-6 max-w-xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Mon profil</h1>
         <p className="text-muted-foreground mt-1">Gérez vos informations personnelles.</p>
@@ -100,21 +113,79 @@ export default function ProfilPage() {
               <Input id="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="motDePasse">Nouveau mot de passe (laisser vide pour ne pas changer)</Label>
-              <Input
-                id="motDePasse"
-                type="password"
-                value={form.motDePasse}
-                onChange={(e) => setForm((f) => ({ ...f, motDePasse: e.target.value }))}
-                placeholder="••••••••"
-              />
+            <div className="space-y-3 p-4 rounded-md border bg-gray-50">
+              <p className="text-sm font-medium">Changer mon mot de passe</p>
+              <p className="text-xs text-muted-foreground">
+                Laissez ces champs vides si vous ne souhaitez pas modifier votre mot de passe.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="ancienMotDePasse">Mot de passe actuel</Label>
+                <Input
+                  id="ancienMotDePasse"
+                  type="password"
+                  autoComplete="current-password"
+                  value={form.ancienMotDePasse}
+                  onChange={(e) => setForm((f) => ({ ...f, ancienMotDePasse: e.target.value }))}
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="motDePasse">Nouveau mot de passe</Label>
+                <Input
+                  id="motDePasse"
+                  type="password"
+                  autoComplete="new-password"
+                  value={form.motDePasse}
+                  onChange={(e) => setForm((f) => ({ ...f, motDePasse: e.target.value }))}
+                  placeholder="••••••••"
+                  minLength={8}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Minimum 8 caractères, dont une majuscule et un chiffre.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmMotDePasse">Confirmer le nouveau mot de passe</Label>
+                <Input
+                  id="confirmMotDePasse"
+                  type="password"
+                  autoComplete="new-password"
+                  value={form.confirmMotDePasse}
+                  onChange={(e) => setForm((f) => ({ ...f, confirmMotDePasse: e.target.value }))}
+                  placeholder="••••••••"
+                  minLength={8}
+                />
+                {form.confirmMotDePasse && form.motDePasse !== form.confirmMotDePasse && (
+                  <p className="text-xs text-destructive">Les mots de passe ne correspondent pas.</p>
+                )}
+              </div>
             </div>
 
             <Button type="submit" disabled={loading}>
               {loading ? "Enregistrement..." : "Sauvegarder"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Portabilité RGPD */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mes données</CardTitle>
+          <CardDescription>
+            Téléchargez l'ensemble de vos données personnelles au format JSON (RGPD — droit à la portabilité, article 20).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <a href={`/api/utilisateurs/${user?.id}/export`} download>
+              <Download className="h-4 w-4 mr-2" aria-hidden="true" />
+              Exporter mes données
+            </a>
+          </Button>
         </CardContent>
       </Card>
 

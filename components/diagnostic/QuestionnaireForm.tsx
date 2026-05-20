@@ -4,7 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { CheckSquare, Square, ChevronLeft, ChevronRight, Send } from "lucide-react"
+import { CheckSquare, Square, ChevronLeft, ChevronRight, Send, ShieldAlert } from "lucide-react"
+import Link from "next/link"
 
 interface Question {
   id: number
@@ -22,6 +23,8 @@ export function QuestionnaireForm({ diagnosticId, questions }: Props) {
   const [currentPage, setCurrentPage] = useState(0)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(false)
+  const [consent, setConsent] = useState(false)
+  const [consentGiven, setConsentGiven] = useState(false)
 
   const ITEMS_PER_PAGE = 10
   const totalPages = Math.ceil(questions.length / ITEMS_PER_PAGE)
@@ -53,6 +56,49 @@ export function QuestionnaireForm({ diagnosticId, questions }: Props) {
       saved: String(data.saved ?? false),
     })
     router.push(`/diagnostic/resultat?${params.toString()}`)
+  }
+
+  if (!consentGiven) {
+    return (
+      <div className="space-y-5 p-5 rounded-lg border bg-amber-50/50 border-amber-200">
+        <div className="flex items-start gap-3">
+          <ShieldAlert className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="space-y-2">
+            <h2 className="font-semibold text-gray-900">Consentement éclairé</h2>
+            <p className="text-sm text-muted-foreground">
+              Ce diagnostic collecte des informations relatives à votre santé (données sensibles
+              au sens de l'article 9 du RGPD). Vos réponses sont utilisées pour calculer un score
+              indicatif et conservées dans votre historique personnel.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Vous pouvez à tout moment consulter, exporter ou supprimer vos données depuis votre
+              page profil. Consultez notre{" "}
+              <Link href="/confidentialite" className="underline hover:text-foreground">
+                politique de confidentialité
+              </Link>{" "}
+              pour plus de détails.
+            </p>
+          </div>
+        </div>
+
+        <label className="flex items-start gap-3 cursor-pointer text-sm">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-gray-300"
+          />
+          <span>
+            Je consens explicitement au traitement de mes données de santé pour la réalisation de
+            ce diagnostic et leur conservation dans mon historique.
+          </span>
+        </label>
+
+        <Button onClick={() => setConsentGiven(true)} disabled={!consent}>
+          Commencer le diagnostic
+        </Button>
+      </div>
+    )
   }
 
   return (

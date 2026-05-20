@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { AlertCircle } from "lucide-react"
 
 interface Props {
   articleId?: number
@@ -16,9 +15,11 @@ interface Props {
     categorie: string
     datePublication: string
   }
+  onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export function InformationForm({ articleId, initialValues }: Props) {
+export function InformationForm({ articleId, initialValues, onSuccess, onCancel }: Props) {
   const router = useRouter()
   const [form, setForm] = useState({
     titre: initialValues?.titre || "",
@@ -48,8 +49,12 @@ export function InformationForm({ articleId, initialValues }: Props) {
     setLoading(false)
 
     if (res.ok) {
-      router.push("/admin/informations")
-      router.refresh()
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push("/admin/informations")
+        router.refresh()
+      }
     } else {
       const data = await res.json()
       if (typeof data.error === "object") setErrors(data.error)
@@ -108,7 +113,7 @@ export function InformationForm({ articleId, initialValues }: Props) {
         <Button type="submit" disabled={loading}>
           {loading ? "Enregistrement..." : articleId ? "Mettre à jour" : "Publier l'article"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        <Button type="button" variant="outline" onClick={() => (onCancel ? onCancel() : router.back())}>
           Annuler
         </Button>
       </div>
