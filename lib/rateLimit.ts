@@ -22,6 +22,10 @@ function clientKey(req: NextRequest, prefix = "") {
 }
 
 export function rateLimit(req: NextRequest, opts: RateLimitOptions): NextResponse | null {
+  // Désactivé en dev/test pour ne pas gêner les E2E (les buckets sont basés sur l'IP localhost)
+  if (process.env.NODE_ENV !== "production" && process.env.RATE_LIMIT_ENABLED !== "1") {
+    return null
+  }
   const key = clientKey(req, opts.keyPrefix)
   const now = Date.now()
   const bucket = store.get(key)
