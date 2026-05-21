@@ -19,6 +19,68 @@ Pyramide respectée : majorité d'unitaires rapides (<3 s), une couche d'intégr
 
 ---
 
+## Synthèse — chemins critiques
+
+### ✅ Chemins critiques totalement testés
+
+**Parcours utilisateur**
+- Inscription (validation mdp, email unique, consentement RGPD) — unit + intégration + E2E
+- Connexion / déconnexion / persistance de session — intégration + E2E
+- Modification du profil — intégration + E2E
+- **Changement de mot de passe** (ancien obligatoire, bcrypt verify, confirmation, admin bypass) — 7 tests d'intégration + E2E
+- **Suppression de compte** / droit à l'oubli (art. 17 RGPD) — intégration
+- **Export JSON** / droit à la portabilité (art. 20 RGPD) — intégration + E2E
+
+**Cœur métier diagnostic**
+- Consentement explicite obligatoire (art. 9 RGPD donnée santé) — E2E
+- Soumission anonyme vs connectée + audit log — intégration
+- Calcul du score Holmes & Rahe + seuils FAIBLE/MODERE/ELEVE — unit
+- Historique strictement isolé par utilisateur (aucune fuite cross-account) — unit + intégration
+
+**Sécurité applicative**
+- Hashage bcrypt cost 12 vérifié à l'inscription — unit
+- Rate-limit IP par route (register, diagnostic, login middleware) — unit + intégration
+- Journal d'audit (logins, exports, rate-limits, diagnostics) — unit + intégration
+- Détection brute-force (≥ 5 échecs/IP/heure) — unit
+- Pseudonymisation IPs et comptes dans le back-office sécu — unit
+- Aucune fuite du `motDePasse` dans les retours API — unit + intégration
+
+**Back-office admin**
+- ACL middleware (redirection non-admin) — E2E + intégration sur chaque route
+- CRUD articles complet (POST, GET, PUT, DELETE) — intégration + E2E
+- Création questionnaire avec questions+réponses imbriquées — intégration + E2E
+- Listing utilisateurs (vérifié sans motDePasse) — intégration
+- Page Cybersécurité (KPIs, alertes brute-force, journal) — E2E
+
+**Conformité légale**
+- Pages confidentialité / mentions légales / CGU accessibles — E2E
+- Bannière cookies (affichage + persistance localStorage) — E2E
+
+### ⚠️ Chemins partiellement testés
+- **Logique interne du `authorize` NextAuth** : la fonction est exposée et la config validée, mais le mock combiné bcrypt+Prisma dans un contexte NextAuth est trop fragile. Validation finale par E2E + tests manuels (bombardement curl documenté).
+- **Middleware Next.js edge runtime** : la fonction `rateLimit()` est testée en isolation, mais son exécution dans l'edge runtime n'est pas testée directement.
+
+### ❌ Non testé (assumé)
+- Composants React (formulaires, modals, bannière) — couverture indirecte via E2E
+- Tests de charge / performance — hors scope projet
+- Script `purge-data.cjs` — testé manuellement en `--dry-run`
+- Envoi d'email — pas de feature email dans l'application
+- Chiffrement au repos — non implémenté (limite documentée pour migration HDS)
+
+### Verdict
+
+**Tous les chemins critiques fonctionnels et de sécurité sont couverts.** Si un test casse, ça signale un vrai bug :
+- contrat d'une route API qui change → cassé immédiatement
+- régression sur le hashage bcrypt → cassé
+- endpoint admin sans guard → cassé
+- fuite de `motDePasse` dans un retour → cassé
+- régression sur le calcul Holmes & Rahe → cassé
+- mécanisme RGPD défaillant (export, suppression, consentement) → cassé
+
+Les zones non testées sont des couches d'affichage qui dépendent de la logique en dessous, déjà couverte — compromis pyramidal classique.
+
+---
+
 ## 1. Couverture des routes API
 
 Toutes les routes (10 fichiers) et toutes les méthodes HTTP sont testées :
