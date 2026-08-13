@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Script from "next/script"
+import { headers } from "next/headers"
 import { connection } from "next/server"
 import "./globals.css"
 import { Providers } from "./providers"
@@ -16,10 +17,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Une CSP à nonce exige un rendu par requête afin que Next.js puisse appliquer
   // un nonce neuf à chaque script d'hydratation.
   await connection()
+  const nonce = (await headers()).get("x-nonce") ?? undefined
+
   return (
-    <html lang="fr">
+    // a11y-init applique les préférences enregistrées avant l'hydratation pour
+    // éviter un flash visuel. Cette mutation ciblée de <html> est intentionnelle.
+    <html lang="fr" suppressHydrationWarning>
       <head>
-        <Script src="/a11y-init.js" strategy="beforeInteractive" />
+        <Script src="/a11y-init.js" strategy="beforeInteractive" nonce={nonce} />
       </head>
       <body>
         <a href="#main-content" className="skip-link">
