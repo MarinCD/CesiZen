@@ -8,7 +8,7 @@ import {
   saveDiagnosticResult,
 } from "@/lib/services/diagnosticService"
 import { diagnosticSubmitSchema } from "@/lib/validations/diagnosticSchema"
-import { rateLimit } from "@/lib/rateLimit"
+import { clientIp, rateLimit } from "@/lib/rateLimit"
 import { logAudit } from "@/lib/audit"
 
 export async function GET() {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (limited) {
     await logAudit({
       action: "RATE_LIMIT_HIT",
-      ip: req.headers.get("x-forwarded-for") || null,
+      ip: clientIp(req),
       metadata: { route: "diagnostic" },
     })
     return limited
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     action: "DIAGNOSTIC_SUBMIT",
     actorId: utilisateurId,
     targetId: utilisateurId,
-    ip: req.headers.get("x-forwarded-for") || null,
+    ip: clientIp(req),
     metadata: { diagnosticId: result.data.diagnosticId },
   })
 

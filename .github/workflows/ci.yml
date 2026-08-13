@@ -28,9 +28,6 @@ jobs:
     env:
       DATABASE_URL: mysql://root:root@127.0.0.1:3306/cesizen
       NEXTAUTH_URL: http://127.0.0.1:3000
-      NEXTAUTH_SECRET: ci-only-secret-not-used-in-production
-      AUDIT_HMAC_KEY: ci-audit-key-not-used-in-production
-      RATE_LIMIT_HMAC_KEY: ci-rate-limit-key-not-used-in-production
       HDS_COMPLIANT_STORAGE: "0"
       RATE_LIMIT_ENABLED: "0"
     steps:
@@ -39,6 +36,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Secrets jetables et aléatoires : aucune valeur devinable ne circule,
+      # même dans un environnement d'intégration.
+      - name: Générer les secrets éphémères
+        run: |
+          echo "NEXTAUTH_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+          echo "AUDIT_HMAC_KEY=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+          echo "RATE_LIMIT_HMAC_KEY=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npx prisma generate
       - run: npx prisma migrate deploy

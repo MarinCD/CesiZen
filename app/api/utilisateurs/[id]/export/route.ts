@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { logAudit } from "@/lib/audit"
+import { clientIp } from "@/lib/rateLimit"
+import { parseId } from "@/lib/validations/params"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
@@ -11,7 +13,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const { id } = await params
-  const userId = parseInt(id)
+  const userId = parseId(id)
+  if (userId === null) {
+    return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 })
+  }
   const sessionUserId = parseInt((session.user as any).id)
   const isAdmin = (session.user as any).role === "ADMINISTRATEUR"
 
@@ -52,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     action: "EXPORT_USER_DATA",
     actorId: sessionUserId,
     targetId: userId,
-    ip: req.headers.get("x-forwarded-for") || null,
+    ip: clientIp(req),
   })
 
   const payload = {

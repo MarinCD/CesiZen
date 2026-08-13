@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createHmac } from "crypto"
 import { prisma } from "@/lib/prisma"
 
@@ -15,6 +15,11 @@ export interface RateLimitOptions {
   windowMs: number
   max: number
   keyPrefix?: string
+  /**
+   * Compteur rattaché à un compte (email) plutôt qu'à une IP. Seul contrôle
+   * efficace contre un brute-force distribué, où l'IP change à chaque requête.
+   */
+  identifier?: string
 }
 
 type RequestHeaders = Headers | Record<string, string | string[] | undefined>
@@ -28,21 +33,47 @@ function headerValue(headers: RequestHeaders, name: string) {
   return Array.isArray(value) ? value[0] : value || null
 }
 
-function clientIp(req: RateLimitRequest) {
-  const ip =
-    headerValue(req.headers, "x-forwarded-for")?.split(",")[0].trim() ||
-    headerValue(req.headers, "x-real-ip") ||
-    "unknown"
-  return ip
+/**
+ * Adresse IP réellement observée par l'infrastructure.
+ *
+ * `X-Forwarded-For` est une liste concaténée : un proxy y *ajoute* l'IP qu'il
+ * voit sans effacer ce que le client a envoyé. La première entrée est donc
+ * toujours falsifiable — la lire revenait à offrir un compteur neuf à chaque
+ * requête. On lit l'en-tête posé par le proxy de confiance (Cloudflare), sinon
+ * on remonte la liste depuis la droite du nombre de proxys déclarés.
+ */
+export function clientIp(req: RateLimitRequest) {
+  const cloudflareIp = headerValue(req.headers, "cf-connecting-ip")
+  if (cloudflareIp) return cloudflareIp.trim()
+
+  const hops =
+    headerValue(req.headers, "x-forwarded-for")
+      ?.split(",")
+      .map((hop) => hop.trim())
+      .filter(Boolean) ?? []
+
+  if (hops.length > 0) {
+    const trustedHops = Math.max(1, Number(process.env.TRUSTED_PROXY_HOPS ?? 1) || 1)
+    return hops[Math.max(0, hops.length - trustedHops)]
+  }
+
+  // Dernier recours : n'est fiable que si le proxy local écrase cet en-tête.
+  return headerValue(req.headers, "x-real-ip")?.trim() || "unknown"
 }
 
-function keyHash(req: RateLimitRequest, prefix: string) {
+function subject(req: RateLimitRequest, opts: RateLimitOptions) {
+  return opts.identifier
+    ? `acct:${opts.identifier.trim().toLowerCase()}`
+    : `ip:${clientIp(req)}`
+}
+
+function keyHash(req: RateLimitRequest, opts: RateLimitOptions) {
   const secret = process.env.RATE_LIMIT_HMAC_KEY || process.env.NEXTAUTH_SECRET
   if (!secret && process.env.NODE_ENV === "production") {
     throw new Error("RATE_LIMIT_HMAC_KEY ou NEXTAUTH_SECRET doit être configuré")
   }
   return createHmac("sha256", secret || "cesizen-test-only")
-    .update(`${prefix}:${clientIp(req)}`)
+    .update(`${opts.keyPrefix || ""}:${subject(req, opts)}`)
     .digest("hex")
 }
 
@@ -61,7 +92,7 @@ function blockedResponse(max: number, retryAfter: number) {
 }
 
 function localRateLimit(req: RateLimitRequest, opts: RateLimitOptions) {
-  const key = keyHash(req, opts.keyPrefix || "")
+  const key = keyHash(req, opts)
   const now = Date.now()
   const bucket = localStore.get(key)
 
@@ -70,11 +101,12 @@ function localRateLimit(req: RateLimitRequest, opts: RateLimitOptions) {
     return null
   }
 
-  if (bucket.count >= opts.max) {
+  // Incrément avant contrôle : une tentative bloquée reste comptabilisée.
+  bucket.count += 1
+  if (bucket.count > opts.max) {
     return blockedResponse(opts.max, Math.ceil((bucket.resetAt - now) / 1000))
   }
 
-  bucket.count += 1
   return null
 }
 
@@ -92,8 +124,15 @@ export async function rateLimit(
   }
 
   try {
-    const hash = keyHash(req, opts.keyPrefix || "")
+    const hash = keyHash(req, opts)
     const since = new Date(Date.now() - opts.windowMs)
+
+    // Insertion *avant* comptage : un COUNT suivi d'un INSERT laissait passer
+    // toutes les requêtes concurrentes lancées avant la première écriture.
+    await prisma.$executeRaw`
+      INSERT INTO rate_limit_attempt (keyHash, createdAt)
+      VALUES (${hash}, CURRENT_TIMESTAMP(3))
+    `
     const rows = await prisma.$queryRaw<Array<{ attempts: bigint }>>`
       SELECT COUNT(*) AS attempts
       FROM rate_limit_attempt
@@ -101,14 +140,10 @@ export async function rateLimit(
     `
     const count = Number(rows[0]?.attempts || 0)
 
-    if (count >= opts.max) {
+    if (count > opts.max) {
       return blockedResponse(opts.max, Math.ceil(opts.windowMs / 1000))
     }
 
-    await prisma.$executeRaw`
-      INSERT INTO rate_limit_attempt (keyHash, createdAt)
-      VALUES (${hash}, CURRENT_TIMESTAMP(3))
-    `
     return null
   } catch (error) {
     console.error("[rate-limit] persistent store unavailable", error)

@@ -4,7 +4,7 @@ import { NextRequest } from "next/server"
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }))
 vi.mock("@/lib/auth", () => ({ authOptions: {} }))
 vi.mock("@/lib/audit", () => ({ logAudit: vi.fn() }))
-vi.mock("@/lib/rateLimit", () => ({ rateLimit: vi.fn() }))
+vi.mock("@/lib/rateLimit", () => ({ rateLimit: vi.fn(), clientIp: vi.fn(() => "203.0.113.7") }))
 vi.mock("@/lib/services/diagnosticService", () => ({
   getFirstDiagnostic: vi.fn(),
   evaluateDiagnostic: vi.fn(),

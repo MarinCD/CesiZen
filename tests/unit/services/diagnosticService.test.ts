@@ -23,12 +23,19 @@ import { prisma } from "@/lib/prisma"
 beforeEach(() => vi.clearAllMocks())
 
 describe("diagnosticService", () => {
-  it("getQuestionnaires inclut questions, diagnostics et créateur", async () => {
+  it("getQuestionnaires n'expose pas le créateur par défaut", async () => {
     vi.mocked(prisma.questionnaire.findMany).mockResolvedValue([] as any)
     await getQuestionnaires()
     const args = vi.mocked(prisma.questionnaire.findMany).mock.calls[0][0]
     expect(args.include).toHaveProperty("questions")
     expect(args.include).toHaveProperty("diagnostics")
+    expect(args.include).not.toHaveProperty("createur")
+  })
+
+  it("getQuestionnaires inclut le créateur sur demande (back-office)", async () => {
+    vi.mocked(prisma.questionnaire.findMany).mockResolvedValue([] as any)
+    await getQuestionnaires({ includeCreateur: true })
+    const args = vi.mocked(prisma.questionnaire.findMany).mock.calls[0][0]
     expect(args.include).toHaveProperty("createur")
   })
 
