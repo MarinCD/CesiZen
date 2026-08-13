@@ -7,12 +7,18 @@ import {
   deleteInformation,
 } from "@/lib/services/informationService"
 import { informationSchema } from "@/lib/validations/informationSchema"
+import { parseId } from "@/lib/validations/params"
+import { logAudit } from "@/lib/audit"
+import { clientIp } from "@/lib/rateLimit"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
 export async function GET(req: NextRequest, { params }: RouteContext) {
-  const { id } = await params
-  const info = await getInformationById(parseInt(id))
+  const { id: rawId } = await params
+  const id = parseId(rawId)
+  if (id === null) return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 })
+
+  const info = await getInformationById(id)
   if (!info) return NextResponse.json({ error: "Introuvable" }, { status: 404 })
   return NextResponse.json(info)
 }
@@ -29,9 +35,28 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 })
   }
 
-  const { id } = await params
-  const info = await updateInformation(parseInt(id), result.data)
-  return NextResponse.json(info)
+  const { id: rawId } = await params
+  const id = parseId(rawId)
+  if (id === null) return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 })
+
+  try {
+    const info = await updateInformation(id, result.data)
+
+    await logAudit({
+      action: "CONTENT_UPDATED",
+      actorId: parseInt((session.user as any).id),
+      targetId: id,
+      ip: clientIp(req),
+      metadata: { type: "information" },
+    })
+
+    return NextResponse.json(info)
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      return NextResponse.json({ error: "Introuvable" }, { status: 404 })
+    }
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
@@ -40,7 +65,26 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
   }
 
-  const { id } = await params
-  await deleteInformation(parseInt(id))
-  return NextResponse.json({ message: "Article supprimé" })
+  const { id: rawId } = await params
+  const id = parseId(rawId)
+  if (id === null) return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 })
+
+  try {
+    await deleteInformation(id)
+
+    await logAudit({
+      action: "CONTENT_DELETED",
+      actorId: parseInt((session.user as any).id),
+      targetId: id,
+      ip: clientIp(req),
+      metadata: { type: "information" },
+    })
+
+    return NextResponse.json({ message: "Article supprimé" })
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      return NextResponse.json({ error: "Introuvable" }, { status: 404 })
+    }
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+  }
 }

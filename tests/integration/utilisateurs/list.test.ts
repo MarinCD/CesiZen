@@ -6,7 +6,10 @@ vi.mock("@/lib/services/userService", () => ({
   getAllUsers: vi.fn(),
   createUser: vi.fn(),
 }))
-vi.mock("@/lib/rateLimit", () => ({ rateLimit: vi.fn().mockReturnValue(null) }))
+vi.mock("@/lib/rateLimit", () => ({
+  rateLimit: vi.fn().mockReturnValue(null),
+  clientIp: vi.fn(() => "203.0.113.7"),
+}))
 vi.mock("@/lib/audit", () => ({ logAudit: vi.fn() }))
 
 import { GET } from "@/app/api/utilisateurs/route"

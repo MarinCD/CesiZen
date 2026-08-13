@@ -3,6 +3,22 @@ import { prisma } from "@/lib/prisma"
 const MS_HOUR = 60 * 60 * 1000
 const MS_DAY = 24 * MS_HOUR
 
+// Actions présentées dans le journal du back-office. Les actions
+// d'administration (rôle, suppression, contenus) y figurent pour que toute
+// action privilégiée reste traçable.
+export const AUDITED_ACTIONS = [
+  "LOGIN_FAILED",
+  "LOGIN_SUCCESS",
+  "RATE_LIMIT_HIT",
+  "EXPORT_USER_DATA",
+  "USER_UPDATED",
+  "USER_ROLE_CHANGED",
+  "USER_DELETED",
+  "CONTENT_CREATED",
+  "CONTENT_UPDATED",
+  "CONTENT_DELETED",
+] as const
+
 export interface SecurityStats {
   failed24h: number
   failed7d: number
@@ -60,7 +76,7 @@ export async function getSecurityStats(): Promise<SecurityStats> {
       prisma.auditLog.count({ where: { action: "EXPORT_USER_DATA", createdAt: { gte: since30d } } }),
       prisma.auditLog.count(),
       prisma.auditLog.findMany({
-        where: { action: { in: ["LOGIN_FAILED", "LOGIN_SUCCESS", "RATE_LIMIT_HIT", "EXPORT_USER_DATA"] } },
+        where: { action: { in: [...AUDITED_ACTIONS] } },
         orderBy: { createdAt: "desc" },
         take: 30,
       }),
@@ -130,8 +146,19 @@ export async function getSecurityStats(): Promise<SecurityStats> {
     if (e.metadata) {
       try {
         const m = JSON.parse(e.metadata)
-        // Ne JAMAIS exposer email/score/données utilisateur ici
-        const safeKeys = ["reason", "route"]
+        // Ne JAMAIS exposer email/score/données utilisateur ici : uniquement la
+        // nature de l'action, jamais les valeurs saisies.
+        const safeKeys = [
+          "reason",
+          "route",
+          "scope",
+          "type",
+          "parAdmin",
+          "ancienRole",
+          "nouveauRole",
+          "motDePasseModifie",
+          "emailModifie",
+        ]
         const safe: Record<string, unknown> = {}
         for (const k of safeKeys) if (k in m) safe[k] = m[k]
         detail = Object.entries(safe).map(([k, v]) => `${k}: ${v}`).join(" — ") || null

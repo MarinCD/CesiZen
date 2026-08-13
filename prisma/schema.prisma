@@ -23,6 +23,8 @@ model Utilisateur {
   dateCreation     DateTime  @default(now())
   derniereActivite DateTime  @default(now())
   consentementRGPD Boolean   @default(false)
+  // Invalide les jetons de session émis avant cette date (cf. callback jwt).
+  motDePasseModifieLe DateTime?
 
   informations        Information[]
   questionnaires      Questionnaire[]

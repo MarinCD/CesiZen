@@ -11,6 +11,8 @@ import { AlertCircle, CheckCircle, Trash2, Download } from "lucide-react"
 export default function ProfilPage() {
   const { data: session } = useSession()
   const user = session?.user as any
+  const userName = user?.name
+  const userEmail = user?.email
 
   const [form, setForm] = useState({ prenom: "", nom: "", email: "", ancienMotDePasse: "", motDePasse: "", confirmMotDePasse: "" })
   const [success, setSuccess] = useState("")
@@ -19,11 +21,11 @@ export default function ProfilPage() {
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
-    if (user) {
-      const [prenom = "", nom = ""] = (user.name || "").split(" ")
-      setForm({ prenom, nom, email: user.email || "", ancienMotDePasse: "", motDePasse: "", confirmMotDePasse: "" })
+    if (userName || userEmail) {
+      const [prenom = "", nom = ""] = (userName || "").split(" ")
+      setForm({ prenom, nom, email: userEmail || "", ancienMotDePasse: "", motDePasse: "", confirmMotDePasse: "" })
     }
-  }, [session])
+  }, [userName, userEmail])
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,6 +34,9 @@ export default function ProfilPage() {
     setLoading(true)
 
     const body: any = { prenom: form.prenom, nom: form.nom, email: form.email }
+    const emailModifie =
+      form.email.trim().toLowerCase() !== (user?.email || "").trim().toLowerCase()
+
     if (form.motDePasse || form.confirmMotDePasse || form.ancienMotDePasse) {
       if (!form.ancienMotDePasse) {
         setLoading(false)
@@ -47,6 +52,17 @@ export default function ProfilPage() {
       body.motDePasse = form.motDePasse
     }
 
+    // Changer l'adresse email revient à changer d'identifiant de connexion :
+    // une session ouverte ne suffit pas, le mot de passe actuel est exigé.
+    if (emailModifie) {
+      if (!form.ancienMotDePasse) {
+        setLoading(false)
+        setError("Veuillez saisir votre mot de passe actuel pour modifier votre adresse email.")
+        return
+      }
+      body.ancienMotDePasse = form.ancienMotDePasse
+    }
+
     const res = await fetch(`/api/utilisateurs/${user.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -55,6 +71,13 @@ export default function ProfilPage() {
 
     setLoading(false)
     if (res.ok) {
+      // Le changement de mot de passe révoque les jetons émis auparavant, y
+      // compris celui de cet onglet : on redirige plutôt que de laisser une
+      // session qui va échouer silencieusement.
+      if (body.motDePasse) {
+        signOut({ callbackUrl: "/login?motDePasseModifie=1" })
+        return
+      }
       setSuccess("Profil mis à jour avec succès.")
       setForm((f) => ({ ...f, ancienMotDePasse: "", motDePasse: "", confirmMotDePasse: "" }))
     } else {

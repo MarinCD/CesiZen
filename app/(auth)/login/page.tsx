@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -8,12 +8,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, CheckCircle } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // Lecture côté client plutôt que useSearchParams : évite d'imposer une
+  // frontière Suspense au prérendu de la page.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("motDePasseModifie") === "1") {
+      setNotice("Mot de passe modifié. Reconnectez-vous avec votre nouveau mot de passe.")
+    } else if (params.get("registered") === "true") {
+      setNotice("Compte créé. Vous pouvez maintenant vous connecter.")
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -45,6 +57,12 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {notice && !error && (
+            <div role="status" className="flex items-center gap-2 bg-green-50 text-green-700 rounded-md p-3 text-sm">
+              <CheckCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+              {notice}
+            </div>
+          )}
           {error && (
             <div role="alert" className="flex items-center gap-2 bg-destructive/10 text-destructive rounded-md p-3 text-sm">
               <AlertCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />

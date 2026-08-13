@@ -76,6 +76,8 @@ export async function updateUser(
   if (data.role !== undefined) updateData.role = data.role
   if (data.motDePasse && data.motDePasse.length > 0) {
     updateData.motDePasse = await bcrypt.hash(data.motDePasse, 12)
+    // Révoque les sessions ouvertes avant ce changement (callback jwt).
+    updateData.motDePasseModifieLe = new Date()
   }
 
   return prisma.utilisateur.update({

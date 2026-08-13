@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ClipboardList, ChevronRight, Plus } from "lucide-react"
 
 export default async function AdminQuestionnairesPage() {
-  const questionnaires = await getQuestionnaires()
+  const questionnaires = await getQuestionnaires({ includeCreateur: true })
 
   return (
     <div className="space-y-6">

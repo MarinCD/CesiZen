@@ -14,6 +14,8 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("bcryptjs", () => ({
   default: { compare: vi.fn() },
 }))
+vi.mock("@/lib/audit", () => ({ logAudit: vi.fn() }))
+vi.mock("@/lib/rateLimit", () => ({ clientIp: vi.fn(() => "203.0.113.7") }))
 
 import { PUT } from "@/app/api/utilisateurs/[id]/route"
 import { getServerSession } from "next-auth"
@@ -33,7 +35,15 @@ const reqBody = (body: object) =>
     headers: { "Content-Type": "application/json" },
   })
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  // Compte cible existant : la route relit l'utilisateur avant tout contrôle.
+  mockFind.mockResolvedValue({
+    motDePasse: "hash-actuel",
+    email: "cible@cesizen.fr",
+    role: "UTILISATEUR",
+  } as any)
+})
 
 describe("PUT /api/utilisateurs/[id] — changement de mot de passe", () => {
   const selfSession = { user: { id: "42", role: "UTILISATEUR" } }
