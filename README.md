@@ -138,6 +138,7 @@ Les tâches sont suivies via **GitHub Issues** organisées en milestones corresp
 - [Voir le tableau de bord projet](https://github.com/users/MarinCD/projects/2)
 - [Consulter la stratégie de maintenance](docs/MAINTENANCE.md)
 - [Consulter la procédure de sauvegarde/restauration](docs/BACKUP_RESTORE.md)
+- [Consulter la stratégie de branches](docs/BRANCHING.md)
 
 ---
 
