@@ -16,6 +16,12 @@ const ACTION_LABELS: Record<string, { label: string; tone: "success" | "warn" | 
   LOGIN_FAILED: { label: "Échec de connexion", tone: "danger" },
   RATE_LIMIT_HIT: { label: "Rate-limit déclenché", tone: "warn" },
   EXPORT_USER_DATA: { label: "Export RGPD", tone: "info" },
+  USER_UPDATED: { label: "Compte modifié", tone: "info" },
+  USER_ROLE_CHANGED: { label: "Rôle modifié", tone: "warn" },
+  USER_DELETED: { label: "Compte supprimé", tone: "warn" },
+  CONTENT_CREATED: { label: "Contenu créé", tone: "info" },
+  CONTENT_UPDATED: { label: "Contenu modifié", tone: "info" },
+  CONTENT_DELETED: { label: "Contenu supprimé", tone: "warn" },
 }
 
 const toneClass = (tone: string) =>

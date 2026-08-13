@@ -68,18 +68,69 @@ describe("rateLimit", () => {
     expect((await rateLimit(req, opts))?.status).toBe(429)
   })
 
-  it("prend la première IP de x-forwarded-for (chaîne de proxies)", async () => {
+  it("ignore la partie falsifiable de x-forwarded-for et retient le dernier saut", async () => {
     const opts = { windowMs: 60_000, max: 1, keyPrefix: "t8" }
     const req = new NextRequest("http://localhost:3000/api/test", {
       method: "POST",
-      headers: { "x-forwarded-for": "9.9.9.9, 10.0.0.1, 192.168.1.1" },
+      headers: { "x-forwarded-for": "9.9.9.9, 192.168.1.1" },
     })
     expect(await rateLimit(req, opts)).toBeNull()
-    // Même première IP -> bloqué
-    const req2 = new NextRequest("http://localhost:3000/api/test", {
+
+    // Première valeur différente (celle que l'attaquant contrôle), même dernier
+    // saut : le compteur doit rester le même.
+    const spoofed = new NextRequest("http://localhost:3000/api/test", {
       method: "POST",
-      headers: { "x-forwarded-for": "9.9.9.9, 172.16.0.1" },
+      headers: { "x-forwarded-for": "1.2.3.4, 192.168.1.1" },
     })
-    expect((await rateLimit(req2, opts))?.status).toBe(429)
+    expect((await rateLimit(spoofed, opts))?.status).toBe(429)
+  })
+
+  it("respecte TRUSTED_PROXY_HOPS pour choisir le saut de confiance", async () => {
+    process.env.TRUSTED_PROXY_HOPS = "2"
+    const opts = { windowMs: 60_000, max: 1, keyPrefix: "t9" }
+    const req = new NextRequest("http://localhost:3000/api/test", {
+      method: "POST",
+      headers: { "x-forwarded-for": "9.9.9.9, 203.0.113.5, 192.168.1.1" },
+    })
+    expect(await rateLimit(req, opts)).toBeNull()
+
+    const spoofed = new NextRequest("http://localhost:3000/api/test", {
+      method: "POST",
+      headers: { "x-forwarded-for": "8.8.8.8, 203.0.113.5, 192.168.1.1" },
+    })
+    expect((await rateLimit(spoofed, opts))?.status).toBe(429)
+    delete process.env.TRUSTED_PROXY_HOPS
+  })
+
+  it("privilégie cf-connecting-ip sur x-forwarded-for", async () => {
+    const opts = { windowMs: 60_000, max: 1, keyPrefix: "t10" }
+    const req = new NextRequest("http://localhost:3000/api/test", {
+      method: "POST",
+      headers: { "cf-connecting-ip": "198.51.100.9", "x-forwarded-for": "1.1.1.1" },
+    })
+    expect(await rateLimit(req, opts)).toBeNull()
+
+    const spoofed = new NextRequest("http://localhost:3000/api/test", {
+      method: "POST",
+      headers: { "cf-connecting-ip": "198.51.100.9", "x-forwarded-for": "2.2.2.2" },
+    })
+    expect((await rateLimit(spoofed, opts))?.status).toBe(429)
+  })
+
+  it("compte par identifiant de compte, quelle que soit l'IP", async () => {
+    const opts = { windowMs: 60_000, max: 2, keyPrefix: "login-account", identifier: "cible@cesizen.fr" }
+    expect(await rateLimit(makeReq("11.0.0.1"), opts)).toBeNull()
+    expect(await rateLimit(makeReq("11.0.0.2"), opts)).toBeNull()
+    // Troisième tentative depuis une IP encore différente : bloquée malgré la rotation.
+    expect((await rateLimit(makeReq("11.0.0.3"), opts))?.status).toBe(429)
+  })
+
+  it("isole les compteurs de deux comptes distincts", async () => {
+    const base = { windowMs: 60_000, max: 1, keyPrefix: "login-account" }
+    expect(await rateLimit(makeReq("12.0.0.1"), { ...base, identifier: "a@cesizen.fr" })).toBeNull()
+    expect(await rateLimit(makeReq("12.0.0.1"), { ...base, identifier: "b@cesizen.fr" })).toBeNull()
+    expect(
+      (await rateLimit(makeReq("12.0.0.1"), { ...base, identifier: "a@cesizen.fr" }))?.status
+    ).toBe(429)
   })
 })

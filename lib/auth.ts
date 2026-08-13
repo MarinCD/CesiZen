@@ -3,10 +3,27 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { logAudit } from "@/lib/audit"
-import { rateLimit } from "@/lib/rateLimit"
+import { clientIp, rateLimit } from "@/lib/rateLimit"
+import { assertSecurityEnv } from "@/lib/env"
+
+assertSecurityEnv()
+
+// Une session courte limite la fenêtre d'exploitation d'un jeton volé ; le
+// `updateAge` la fait glisser tant que l'utilisateur reste actif.
+const SESSION_MAX_AGE_SECONDS = 2 * 60 * 60
+const SESSION_UPDATE_AGE_SECONDS = 15 * 60
+
+// Un JWT porte des droits figés : sans relecture en base, un compte supprimé ou
+// rétrogradé conserverait son rôle jusqu'à l'expiration du jeton.
+const REVALIDATION_INTERVAL_MS = 5 * 60 * 1000
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    updateAge: SESSION_UPDATE_AGE_SECONDS,
+  },
+  jwt: { maxAge: SESSION_MAX_AGE_SECONDS },
   pages: {
     signIn: "/login",
   },
@@ -18,20 +35,25 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials, req) {
-        const ip =
-          (req?.headers as any)?.["x-forwarded-for"]?.split(",")[0]?.trim() ||
-          (req?.headers as any)?.["x-real-ip"] ||
-          null
+        const headers = (req?.headers || {}) as Record<string, string | string[] | undefined>
+        const ip = clientIp({ headers })
+        const email = credentials?.email?.trim().toLowerCase() || null
 
-        const limited = await rateLimit(
-          { headers: (req?.headers || {}) as Record<string, string | string[] | undefined> },
-          { windowMs: 60_000, max: 10, keyPrefix: "login" }
-        )
-        if (limited) {
+        // Deux compteurs complémentaires : par IP contre le bourrinage depuis une
+        // machine, par compte contre un brute-force distribué qui change d'IP.
+        const ipLimited = await rateLimit({ headers }, { windowMs: 60_000, max: 10, keyPrefix: "login" })
+        const accountLimited = email
+          ? await rateLimit(
+              { headers },
+              { windowMs: 15 * 60_000, max: 10, keyPrefix: "login-account", identifier: email }
+            )
+          : null
+
+        if (ipLimited || accountLimited) {
           await logAudit({
             action: "RATE_LIMIT_HIT",
             ip,
-            metadata: { route: "login" },
+            metadata: { route: "login", scope: accountLimited ? "compte" : "ip" },
           })
           return null
         }
@@ -93,13 +115,63 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      const claims = token as any
+
       if (user) {
-        token.role = (user as any).role
-        token.id = user.id
+        claims.role = (user as any).role
+        claims.id = user.id
+        // Date d'authentification réelle : `iat` est réécrit à chaque encodage
+        // et ne permet donc pas de détecter un changement de mot de passe.
+        claims.authTime = Date.now()
+        claims.revalidatedAt = Date.now()
+        delete claims.revoked
+        return token
       }
+
+      if (claims.revoked) return token
+
+      const lastCheck = typeof claims.revalidatedAt === "number" ? claims.revalidatedAt : 0
+      if (Date.now() - lastCheck < REVALIDATION_INTERVAL_MS) return token
+
+      const userId = Number(claims.id)
+      if (!Number.isInteger(userId) || userId <= 0) {
+        claims.revoked = true
+        return token
+      }
+
+      try {
+        const current = await prisma.utilisateur.findUnique({
+          where: { id: userId },
+          select: { role: true, motDePasseModifieLe: true },
+        })
+
+        // Compte supprimé : le jeton ne doit plus ouvrir aucune session.
+        if (!current) {
+          claims.revoked = true
+          return token
+        }
+
+        const authTime = typeof claims.authTime === "number" ? claims.authTime : 0
+        if (current.motDePasseModifieLe && current.motDePasseModifieLe.getTime() > authTime) {
+          claims.revoked = true
+          return token
+        }
+
+        claims.role = current.role
+        claims.revalidatedAt = Date.now()
+      } catch (error) {
+        // Base indisponible : on conserve le jeton en l'état et on retentera au
+        // prochain appel plutôt que de déconnecter tout le monde.
+        console.error("[auth] revalidation du jeton impossible", error)
+      }
+
       return token
     },
     async session({ session, token }) {
+      // Session vide pour un jeton révoqué : next-auth ignore un objet sans clé,
+      // donc getServerSession renvoie null et tous les contrôles échouent.
+      if ((token as any).revoked) return {} as typeof session
+
       if (session.user) {
         (session.user as any).role = token.role
         ;(session.user as any).id = token.id

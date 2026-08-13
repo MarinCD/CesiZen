@@ -45,12 +45,14 @@ export async function saveDiagnosticResult(data: {
   return prisma.resultatDiagnostic.create({ data })
 }
 
-export async function getQuestionnaires() {
+export async function getQuestionnaires(options?: { includeCreateur?: boolean }) {
   return prisma.questionnaire.findMany({
     include: {
       questions: true,
       diagnostics: true,
-      createur: { select: { nom: true, prenom: true } },
+      ...(options?.includeCreateur
+        ? { createur: { select: { nom: true, prenom: true } } }
+        : {}),
     },
     orderBy: { dateCreation: "desc" },
   })

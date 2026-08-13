@@ -7,7 +7,7 @@ vi.mock("@/lib/services/userService", () => ({
 }))
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }))
 vi.mock("@/lib/auth", () => ({ authOptions: {} }))
-vi.mock("@/lib/rateLimit", () => ({ rateLimit: vi.fn() }))
+vi.mock("@/lib/rateLimit", () => ({ rateLimit: vi.fn(), clientIp: vi.fn(() => "203.0.113.7") }))
 vi.mock("@/lib/audit", () => ({ logAudit: vi.fn() }))
 
 import { POST } from "@/app/api/utilisateurs/route"
