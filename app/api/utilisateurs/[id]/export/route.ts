@@ -4,13 +4,14 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { logAudit } from "@/lib/audit"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
   }
 
-  const userId = parseInt(params.id)
+  const { id } = await params
+  const userId = parseInt(id)
   const sessionUserId = parseInt((session.user as any).id)
   const isAdmin = (session.user as any).role === "ADMINISTRATEUR"
 

@@ -47,6 +47,7 @@ describe("diagnosticService", () => {
   })
 
   it("submitDiagnostic somme correctement les points associés", async () => {
+    vi.mocked(prisma.diagnostic.findUnique).mockResolvedValue({ questionnaireId: 7 } as any)
     vi.mocked(prisma.question.findMany).mockResolvedValue([
       { pointsAssocies: 100 }, { pointsAssocies: 80 }, { pointsAssocies: 50 },
     ] as any)
@@ -58,9 +59,14 @@ describe("diagnosticService", () => {
     expect(args.data.score).toBe(230)
     expect(args.data.interpretation).toBe("MODERE")
     expect(args.data.utilisateurId).toBe(42)
+    expect(vi.mocked(prisma.question.findMany).mock.calls[0][0].where).toEqual({
+      id: { in: [1, 2, 3] },
+      questionnaireId: 7,
+    })
   })
 
   it("submitDiagnostic affecte FAIBLE pour un score < 150", async () => {
+    vi.mocked(prisma.diagnostic.findUnique).mockResolvedValue({ questionnaireId: 7 } as any)
     vi.mocked(prisma.question.findMany).mockResolvedValue([
       { pointsAssocies: 50 }, { pointsAssocies: 30 },
     ] as any)
@@ -71,6 +77,7 @@ describe("diagnosticService", () => {
   })
 
   it("submitDiagnostic affecte ELEVE pour un score >= 300", async () => {
+    vi.mocked(prisma.diagnostic.findUnique).mockResolvedValue({ questionnaireId: 7 } as any)
     vi.mocked(prisma.question.findMany).mockResolvedValue([
       { pointsAssocies: 200 }, { pointsAssocies: 150 },
     ] as any)
@@ -78,6 +85,15 @@ describe("diagnosticService", () => {
     await submitDiagnostic({ diagnosticId: 1, questionIds: [1, 2], utilisateurId: 1 })
     const args = vi.mocked(prisma.resultatDiagnostic.create).mock.calls[0][0]
     expect(args.data.interpretation).toBe("ELEVE")
+  })
+
+  it("rejette une question qui n'appartient pas au questionnaire du diagnostic", async () => {
+    vi.mocked(prisma.diagnostic.findUnique).mockResolvedValue({ questionnaireId: 7 } as any)
+    vi.mocked(prisma.question.findMany).mockResolvedValue([{ pointsAssocies: 50 }] as any)
+
+    await expect(
+      submitDiagnostic({ diagnosticId: 1, questionIds: [1, 999], utilisateurId: 1 })
+    ).rejects.toThrow("n'appartiennent pas")
   })
 
   it("getHistoriqueDiagnostics filtre par utilisateurId", async () => {

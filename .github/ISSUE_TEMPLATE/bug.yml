@@ -1,0 +1,47 @@
+name: Anomalie
+description: Signaler un comportement incorrect ou une régression
+title: "[BUG] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Merci de retirer tout secret, adresse IP et donnée de santé avant de compléter ce formulaire.
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environnement
+      options: [Production, Préproduction, Développement]
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description et impact
+      description: Décrivez le résultat observé et les utilisateurs concernés.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Étapes de reproduction
+      placeholder: "1. …\n2. …\n3. …"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Résultat attendu
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Sévérité estimée
+      options: [P1 — critique, P2 — élevée, P3 — modérée, P4 — faible]
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Preuves expurgées
+      description: Logs ou captures sans secret ni donnée personnelle.

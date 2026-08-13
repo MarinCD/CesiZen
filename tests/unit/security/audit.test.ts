@@ -25,7 +25,8 @@ describe("logAudit", () => {
     await logAudit({ action: "RATE_LIMIT_HIT", ip: "1.2.3.4", metadata: { route: "diagnostic" } })
     const call = mockCreate.mock.calls[0][0]
     expect(call.data.metadata).toBe('{"route":"diagnostic"}')
-    expect(call.data.ip).toBe("1.2.3.4")
+    expect(call.data.ip).toMatch(/^ip-[a-f0-9]{16}$/)
+    expect(call.data.ip).not.toContain("1.2.3.4")
   })
 
   it("ne throw pas si la BDD est indisponible", async () => {

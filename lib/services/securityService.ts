@@ -82,8 +82,14 @@ export async function getSecurityStats(): Promise<SecurityStats> {
     if (evt.metadata) {
       try {
         const m = JSON.parse(evt.metadata)
-        if (typeof m?.email === "string") {
-          emailCounts.set(m.email, (emailCounts.get(m.email) || 0) + 1)
+        const account =
+          typeof m?.accountRef === "string"
+            ? m.accountRef
+            : typeof m?.email === "string"
+              ? hashAccount(m.email)
+              : null
+        if (account) {
+          emailCounts.set(account, (emailCounts.get(account) || 0) + 1)
         }
       } catch {}
     }
@@ -95,7 +101,10 @@ export async function getSecurityStats(): Promise<SecurityStats> {
     .slice(0, 10)
 
   const topFailedAccounts = Array.from(emailCounts.entries())
-    .map(([email, count]) => ({ accountHash: hashAccount(email), count }))
+    .map(([accountRef, count]) => ({
+      accountHash: accountRef.startsWith("acct-") ? accountRef : hashAccount(accountRef),
+      count,
+    }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10)
 

@@ -33,8 +33,7 @@ async function main() {
   const inactiveUsers = await prisma.utilisateur.findMany({
     where: {
       role: "UTILISATEUR",
-      dateCreation: { lt: cutoffInactiveUsers },
-      resultatsDiagnostic: { none: { dateRealisation: { gte: cutoffInactiveUsers } } },
+      derniereActivite: { lt: cutoffInactiveUsers },
     },
     select: { id: true, email: true },
   })
@@ -58,8 +57,13 @@ async function main() {
   const r3 = await prisma.utilisateur.deleteMany({
     where: { id: { in: inactiveUsers.map((u) => u.id) } },
   })
+  const r4 = await prisma.rateLimitAttempt.deleteMany({
+    where: { createdAt: { lt: cutoff(2) } },
+  })
 
-  console.log(`\nSupprimés : ${r1.count} résultats, ${r2.count} audits, ${r3.count} comptes.`)
+  console.log(
+    `\nSupprimés : ${r1.count} résultats, ${r2.count} audits, ${r3.count} comptes, ${r4.count} tentatives rate-limit.`
+  )
 }
 
 main()

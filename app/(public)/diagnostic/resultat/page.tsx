@@ -2,15 +2,16 @@ import { ResultatCard } from "@/components/diagnostic/ResultatCard"
 import { redirect } from "next/navigation"
 
 interface Props {
-  searchParams: { score?: string; interpretation?: string; saved?: string }
+  searchParams: Promise<{ score?: string; interpretation?: string; saved?: string }>
 }
 
-export default function ResultatPage({ searchParams }: Props) {
-  const score = parseInt(searchParams.score || "0")
-  const interpretation = searchParams.interpretation || "FAIBLE"
-  const saved = searchParams.saved === "true"
+export default async function ResultatPage({ searchParams }: Props) {
+  const query = await searchParams
+  const score = parseInt(query.score || "0")
+  const interpretation = query.interpretation || "FAIBLE"
+  const saved = query.saved === "true"
 
-  if (!searchParams.score) redirect("/diagnostic")
+  if (!query.score) redirect("/diagnostic")
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">

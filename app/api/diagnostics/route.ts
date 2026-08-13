@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { submitDiagnostic, getFirstDiagnostic, interpreterScore } from "@/lib/services/diagnosticService"
+import {
+  evaluateDiagnostic,
+  getFirstDiagnostic,
+  InvalidDiagnosticSelectionError,
+  saveDiagnosticResult,
+} from "@/lib/services/diagnosticService"
 import { diagnosticSubmitSchema } from "@/lib/validations/diagnosticSchema"
 import { rateLimit } from "@/lib/rateLimit"
 import { logAudit } from "@/lib/audit"
@@ -13,7 +18,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { windowMs: 60_000, max: 10, keyPrefix: "diagnostic" })
+  const limited = await rateLimit(req, { windowMs: 60_000, max: 10, keyPrefix: "diagnostic" })
   if (limited) {
     await logAudit({
       action: "RATE_LIMIT_HIT",
@@ -29,25 +34,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 })
   }
 
-  const session = await getServerSession(authOptions)
+  let evaluation: { score: number; interpretation: string }
+  try {
+    evaluation = await evaluateDiagnostic(result.data.diagnosticId, result.data.questionIds)
+  } catch (error) {
+    if (error instanceof InvalidDiagnosticSelectionError) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+    throw error
+  }
 
-  const { prisma } = await import("@/lib/prisma")
-  const questions = await prisma.question.findMany({
-    where: { id: { in: result.data.questionIds } },
-    select: { pointsAssocies: true },
-  })
-  const score = questions.reduce((sum, q) => sum + q.pointsAssocies, 0)
-  const interpretation = interpreterScore(score)
+  const { score, interpretation } = evaluation
+  const session = await getServerSession(authOptions)
 
   if (!session) {
     return NextResponse.json({ score, interpretation, saved: false })
   }
 
+  if (process.env.NODE_ENV === "production" && process.env.HDS_COMPLIANT_STORAGE !== "1") {
+    return NextResponse.json({
+      score,
+      interpretation,
+      saved: false,
+      storageDisabledReason: "L'historisation nécessite un hébergement déclaré conforme HDS.",
+    })
+  }
+
   const utilisateurId = parseInt((session.user as any).id)
-  const resultat = await submitDiagnostic({
+  const resultat = await saveDiagnosticResult({
     diagnosticId: result.data.diagnosticId,
-    questionIds: result.data.questionIds,
     utilisateurId,
+    score,
+    interpretation,
   })
 
   await logAudit({
@@ -55,7 +73,7 @@ export async function POST(req: NextRequest) {
     actorId: utilisateurId,
     targetId: utilisateurId,
     ip: req.headers.get("x-forwarded-for") || null,
-    metadata: { diagnosticId: result.data.diagnosticId, score },
+    metadata: { diagnosticId: result.data.diagnosticId },
   })
 
   return NextResponse.json({ ...resultat, saved: true }, { status: 201 })

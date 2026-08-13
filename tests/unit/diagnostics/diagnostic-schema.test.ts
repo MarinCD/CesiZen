@@ -25,4 +25,9 @@ describe("diagnosticSubmitSchema", () => {
     const result = diagnosticSubmitSchema.safeParse({ diagnosticId: 1, questionIds: [1.5] })
     expect(result.success).toBe(false)
   })
+
+  it("rejette les identifiants de question dupliqués", () => {
+    const result = diagnosticSubmitSchema.safeParse({ diagnosticId: 1, questionIds: [1, 1] })
+    expect(result.success).toBe(false)
+  })
 })

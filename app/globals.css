@@ -33,6 +33,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
@@ -69,3 +70,88 @@
 .animate-breathe-hold-low {
   animation: breathe-hold-low var(--duration, 4s) linear forwards;
 }
+
+/* === Accessibilité RGAA ===
+   Classes appliquées sur <html> par AccessibilityPanel selon les préférences
+   utilisateur (persistées en localStorage). */
+
+/* Taille de texte */
+html.a11y-text-large            { font-size: 112.5%; }   /* 18px base */
+html.a11y-text-xlarge           { font-size: 125%; }     /* 20px base */
+
+/* Contraste élevé : couleurs forcées noir / blanc / jaune */
+html.a11y-high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 60 100% 50%;
+  --card: 0 0% 10%;
+  --card-foreground: 60 100% 50%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 60 100% 50%;
+  --primary: 60 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 60 100% 50%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 60 100% 70%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 60 100% 50%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 60 100% 50%;
+  --input: 0 0% 20%;
+  --ring: 60 100% 50%;
+}
+html.a11y-high-contrast img,
+html.a11y-high-contrast svg { filter: brightness(0) invert(1); }
+html.a11y-high-contrast .a11y-keep-color,
+html.a11y-high-contrast .a11y-keep-color * { filter: none !important; }
+
+/* Soulignement systématique des liens (RGAA 10.6) */
+html.a11y-underline-links a { text-decoration: underline !important; }
+
+/* Désactivation des animations (RGAA 13.8, prefers-reduced-motion) */
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Police adaptée à la dyslexie */
+html.a11y-dyslexia,
+html.a11y-dyslexia body {
+  font-family: "OpenDyslexic", "Comic Sans MS", "Verdana", sans-serif !important;
+  letter-spacing: 0.05em;
+}
+
+/* Espacement augmenté (WCAG 1.4.12) */
+html.a11y-spacing,
+html.a11y-spacing body {
+  letter-spacing: 0.12em;
+  word-spacing: 0.16em;
+  line-height: 1.8 !important;
+}
+html.a11y-spacing p,
+html.a11y-spacing li { margin-bottom: 1em; }
+
+/* Focus visible renforcé (RGAA 10.7) — toujours actif */
+*:focus-visible {
+  outline: 3px solid hsl(var(--ring)) !important;
+  outline-offset: 2px;
+}
+
+/* Lien d'évitement (skip-link) — visible uniquement au focus */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: 1000;
+  padding: 1rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  text-decoration: none;
+  font-weight: 600;
+}
+.skip-link:focus { top: 0; }

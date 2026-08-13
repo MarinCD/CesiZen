@@ -21,6 +21,7 @@ model Utilisateur {
   motDePasse       String
   role             Role      @default(UTILISATEUR)
   dateCreation     DateTime  @default(now())
+  derniereActivite DateTime  @default(now())
   consentementRGPD Boolean   @default(false)
 
   informations        Information[]
@@ -117,6 +118,17 @@ model AuditLog {
   @@index([targetId])
   @@index([action])
   @@map("audit_log")
+}
+
+// Compteurs persistants partagés entre toutes les instances applicatives.
+// La clé est un HMAC de la route et de l'adresse IP : aucune IP brute n'est stockée.
+model RateLimitAttempt {
+  id        Int      @id @default(autoincrement())
+  keyHash   String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  @@index([keyHash, createdAt])
+  @@map("rate_limit_attempt")
 }
 
 model TrackerEmotion {

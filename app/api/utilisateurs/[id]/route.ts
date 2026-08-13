@@ -7,12 +7,15 @@ import { Role } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> }
+
+export async function GET(req: NextRequest, { params }: RouteContext) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
 
   const sessionUser = session.user as any
-  const id = parseInt(params.id)
+  const { id: rawId } = await params
+  const id = parseInt(rawId)
 
   // Un utilisateur peut voir son propre profil, un admin peut voir tous
   if (sessionUser.role !== "ADMINISTRATEUR" && sessionUser.id !== String(id)) {
@@ -25,12 +28,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(user)
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: RouteContext) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
 
   const sessionUser = session.user as any
-  const id = parseInt(params.id)
+  const { id: rawId } = await params
+  const id = parseInt(rawId)
 
   if (sessionUser.role !== "ADMINISTRATEUR" && sessionUser.id !== String(id)) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
@@ -86,12 +90,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
 
   const sessionUser = session.user as any
-  const id = parseInt(params.id)
+  const { id: rawId } = await params
+  const id = parseInt(rawId)
 
   if (sessionUser.role !== "ADMINISTRATEUR" && sessionUser.id !== String(id)) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 })

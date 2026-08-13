@@ -40,7 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
-prisma/migrations/
+# Prisma migrations are deployment artifacts and must be versioned.
+/backups/
 playwright-report/
 test-results/

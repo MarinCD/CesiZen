@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { windowMs: 60_000, max: 5, keyPrefix: "register" })
+  const limited = await rateLimit(req, { windowMs: 60_000, max: 5, keyPrefix: "register" })
   if (limited) {
     await logAudit({
       action: "RATE_LIMIT_HIT",

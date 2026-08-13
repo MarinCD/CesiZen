@@ -6,6 +6,45 @@ export function interpreterScore(score: number): string {
   return "ELEVE"
 }
 
+export class InvalidDiagnosticSelectionError extends Error {
+  constructor() {
+    super("Les questions sélectionnées n'appartiennent pas au diagnostic demandé")
+    this.name = "InvalidDiagnosticSelectionError"
+  }
+}
+
+export async function evaluateDiagnostic(diagnosticId: number, questionIds: number[]) {
+  const diagnostic = await prisma.diagnostic.findUnique({
+    where: { id: diagnosticId },
+    select: { questionnaireId: true },
+  })
+  if (!diagnostic) throw new InvalidDiagnosticSelectionError()
+
+  const questions = await prisma.question.findMany({
+    where: {
+      id: { in: questionIds },
+      questionnaireId: diagnostic.questionnaireId,
+    },
+    select: { pointsAssocies: true },
+  })
+
+  if (questions.length !== questionIds.length) {
+    throw new InvalidDiagnosticSelectionError()
+  }
+
+  const score = questions.reduce((sum, q) => sum + q.pointsAssocies, 0)
+  return { score, interpretation: interpreterScore(score) }
+}
+
+export async function saveDiagnosticResult(data: {
+  diagnosticId: number
+  utilisateurId: number
+  score: number
+  interpretation: string
+}) {
+  return prisma.resultatDiagnostic.create({ data })
+}
+
 export async function getQuestionnaires() {
   return prisma.questionnaire.findMany({
     include: {
@@ -45,21 +84,11 @@ export async function submitDiagnostic(data: {
   questionIds: number[]
   utilisateurId: number
 }) {
-  const questions = await prisma.question.findMany({
-    where: { id: { in: data.questionIds } },
-    select: { pointsAssocies: true },
-  })
-
-  const score = questions.reduce((sum, q) => sum + q.pointsAssocies, 0)
-  const interpretation = interpreterScore(score)
-
-  return prisma.resultatDiagnostic.create({
-    data: {
-      score,
-      interpretation,
-      utilisateurId: data.utilisateurId,
-      diagnosticId: data.diagnosticId,
-    },
+  const evaluation = await evaluateDiagnostic(data.diagnosticId, data.questionIds)
+  return saveDiagnosticResult({
+    ...evaluation,
+    utilisateurId: data.utilisateurId,
+    diagnosticId: data.diagnosticId,
   })
 }
 

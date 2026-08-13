@@ -21,13 +21,16 @@ export default function ConfidentialitePage() {
       <h2>2. Données collectées</h2>
       <ul>
         <li><strong>Identité :</strong> nom, prénom, adresse e-mail.</li>
-        <li><strong>Authentification :</strong> mot de passe (stocké chiffré avec bcrypt).</li>
+        <li><strong>Authentification :</strong> mot de passe (haché avec bcrypt, jamais stocké en clair).</li>
         <li>
           <strong>Données de santé (article 9 du RGPD) :</strong> résultats des auto-diagnostics
           de stress (score, interprétation, date). Ces données sont sensibles et bénéficient
           d'une protection renforcée.
         </li>
-        <li><strong>Données de connexion :</strong> adresse IP, date d'accès (journal d'audit).</li>
+        <li>
+          <strong>Données de connexion :</strong> référence pseudonymisée de l'adresse IP et date
+          d'accès (l'adresse IP brute n'est pas conservée dans le journal d'audit).
+        </li>
       </ul>
 
       <h2>3. Finalités et base légale</h2>

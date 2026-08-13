@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { logAudit } from "@/lib/audit"
+import { rateLimit } from "@/lib/rateLimit"
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -21,6 +22,19 @@ export const authOptions: NextAuthOptions = {
           (req?.headers as any)?.["x-forwarded-for"]?.split(",")[0]?.trim() ||
           (req?.headers as any)?.["x-real-ip"] ||
           null
+
+        const limited = await rateLimit(
+          { headers: (req?.headers || {}) as Record<string, string | string[] | undefined> },
+          { windowMs: 60_000, max: 10, keyPrefix: "login" }
+        )
+        if (limited) {
+          await logAudit({
+            action: "RATE_LIMIT_HIT",
+            ip,
+            metadata: { route: "login" },
+          })
+          return null
+        }
 
         if (!credentials?.email || !credentials?.password) {
           await logAudit({
@@ -54,6 +68,12 @@ export const authOptions: NextAuthOptions = {
           })
           return null
         }
+
+        await prisma.$executeRaw`
+          UPDATE utilisateur
+          SET derniereActivite = CURRENT_TIMESTAMP(3)
+          WHERE id = ${user.id}
+        `
 
         await logAudit({
           action: "LOGIN_SUCCESS",

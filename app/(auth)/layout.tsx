@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <Heart className="h-7 w-7" aria-hidden="true" />
         CESIZen
       </Link>
-      <div className="w-full max-w-md">{children}</div>
+      <main id="main-content" tabIndex={-1} className="w-full max-w-md">{children}</main>
     </div>
   )
 }

@@ -10,13 +10,14 @@ import { DeleteArticleButton } from "@/components/admin/DeleteArticleButton"
 import { ArticleFormModal } from "@/components/admin/ArticleFormModal"
 
 interface Props {
-  searchParams: { search?: string; categorie?: string; page?: string }
+  searchParams: Promise<{ search?: string; categorie?: string; page?: string }>
 }
 
 export default async function InformationsPage({ searchParams }: Props) {
-  const search = searchParams.search || ""
-  const categorie = searchParams.categorie || ""
-  const page = parseInt(searchParams.page || "1")
+  const query = await searchParams
+  const search = query.search || ""
+  const categorie = query.categorie || ""
+  const page = parseInt(query.page || "1")
 
   const [{ items, total, pages }, categories, session] = await Promise.all([
     getInformations({ search, categorie, page }),

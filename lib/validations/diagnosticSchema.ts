@@ -2,7 +2,10 @@ import { z } from "zod"
 
 export const diagnosticSubmitSchema = z.object({
   diagnosticId: z.number().int().positive(),
-  questionIds: z.array(z.number().int().positive()).min(1, "Au moins une question est requise"),
+  questionIds: z
+    .array(z.number().int().positive())
+    .min(1, "Au moins une question est requise")
+    .refine((ids) => new Set(ids).size === ids.length, "Une question ne peut être soumise qu'une fois"),
 })
 
 export type DiagnosticSubmitInput = z.infer<typeof diagnosticSubmitSchema>

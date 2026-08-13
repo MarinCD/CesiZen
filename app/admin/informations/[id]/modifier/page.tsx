@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { InformationForm } from "@/components/admin/InformationForm"
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function ModifierArticlePage({ params }: Props) {
-  const article = await getInformationById(parseInt(params.id))
+  const { id } = await params
+  const article = await getInformationById(parseInt(id))
   if (!article) notFound()
 
   return (

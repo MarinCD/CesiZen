@@ -1,0 +1,38 @@
+name: Maintenance
+description: Mise à jour, dette technique, sauvegarde ou opération planifiée
+title: "[MAINTENANCE] "
+labels: ["maintenance", "triage"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Catégorie
+      options: [Sécurité, Dépendances, Base de données, Sauvegarde/restauration, Performance, Documentation]
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexte, risque et périmètre
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité
+      options: [P1 — critique, P2 — élevée, P3 — modérée, P4 — faible]
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critères d’acceptation
+      placeholder: "- [ ] Correctif implémenté\n- [ ] Tests et build réussis\n- [ ] Retour arrière documenté"
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Plan de validation et retour arrière
+    validations:
+      required: true

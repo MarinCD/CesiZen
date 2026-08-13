@@ -45,7 +45,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             })}
           </nav>
         </aside>
-        <main className="flex-1 min-w-0">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0">{children}</main>
       </div>
       <Footer />
     </div>

@@ -7,8 +7,9 @@ vi.mock("@/lib/audit", () => ({ logAudit: vi.fn() }))
 vi.mock("@/lib/rateLimit", () => ({ rateLimit: vi.fn() }))
 vi.mock("@/lib/services/diagnosticService", () => ({
   getFirstDiagnostic: vi.fn(),
-  submitDiagnostic: vi.fn(),
-  interpreterScore: vi.fn((s: number) => (s < 150 ? "FAIBLE" : s < 300 ? "MODERE" : "ELEVE")),
+  evaluateDiagnostic: vi.fn(),
+  saveDiagnosticResult: vi.fn(),
+  InvalidDiagnosticSelectionError: class InvalidDiagnosticSelectionError extends Error {},
 }))
 vi.mock("@/lib/prisma", () => ({
   prisma: { question: { findMany: vi.fn() } },
@@ -16,13 +17,14 @@ vi.mock("@/lib/prisma", () => ({
 
 import { POST } from "@/app/api/diagnostics/route"
 import { getServerSession } from "next-auth"
-import { submitDiagnostic } from "@/lib/services/diagnosticService"
+import { evaluateDiagnostic, saveDiagnosticResult } from "@/lib/services/diagnosticService"
 import { rateLimit } from "@/lib/rateLimit"
 import { logAudit } from "@/lib/audit"
 import { prisma } from "@/lib/prisma"
 
 const mockSession = vi.mocked(getServerSession)
-const mockSubmit = vi.mocked(submitDiagnostic)
+const mockEvaluate = vi.mocked(evaluateDiagnostic)
+const mockSave = vi.mocked(saveDiagnosticResult)
 const mockRl = vi.mocked(rateLimit)
 const mockLog = vi.mocked(logAudit)
 const mockQuestions = vi.mocked(prisma.question.findMany)
@@ -42,7 +44,7 @@ beforeEach(() => {
 describe("POST /api/diagnostics", () => {
   it("calcule le score et l'interprétation pour un visiteur (non sauvegardé)", async () => {
     mockSession.mockResolvedValue(null as any)
-    mockQuestions.mockResolvedValue([{ pointsAssocies: 100 }, { pointsAssocies: 80 }] as any)
+    mockEvaluate.mockResolvedValue({ score: 180, interpretation: "MODERE" })
 
     const res = await POST(req({ diagnosticId: 1, questionIds: [1, 2] }))
     expect(res.status).toBe(200)
@@ -50,17 +52,22 @@ describe("POST /api/diagnostics", () => {
     expect(data.score).toBe(180)
     expect(data.interpretation).toBe("MODERE")
     expect(data.saved).toBe(false)
-    expect(mockSubmit).not.toHaveBeenCalled()
+    expect(mockSave).not.toHaveBeenCalled()
   })
 
   it("sauvegarde et audite pour un utilisateur connecté", async () => {
     mockSession.mockResolvedValue({ user: { id: "42", role: "UTILISATEUR" } } as any)
-    mockQuestions.mockResolvedValue([{ pointsAssocies: 200 }, { pointsAssocies: 150 }] as any)
-    mockSubmit.mockResolvedValue({ id: 1, score: 350, interpretation: "ELEVE" } as any)
+    mockEvaluate.mockResolvedValue({ score: 350, interpretation: "ELEVE" })
+    mockSave.mockResolvedValue({ id: 1, score: 350, interpretation: "ELEVE" } as any)
 
     const res = await POST(req({ diagnosticId: 1, questionIds: [1, 2] }))
     expect(res.status).toBe(201)
-    expect(mockSubmit).toHaveBeenCalled()
+    expect(mockSave).toHaveBeenCalledWith({
+      diagnosticId: 1,
+      utilisateurId: 42,
+      score: 350,
+      interpretation: "ELEVE",
+    })
     expect(mockLog).toHaveBeenCalledWith(
       expect.objectContaining({ action: "DIAGNOSTIC_SUBMIT", actorId: 42 })
     )

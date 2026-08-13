@@ -3,8 +3,9 @@ import { NextRequest } from "next/server"
 
 vi.mock("@/lib/services/diagnosticService", () => ({
   getFirstDiagnostic: vi.fn(),
-  submitDiagnostic: vi.fn(),
-  interpreterScore: vi.fn((score: number) => (score > 150 ? "Stress élevé" : "Stress modéré")),
+  evaluateDiagnostic: vi.fn(),
+  saveDiagnosticResult: vi.fn(),
+  InvalidDiagnosticSelectionError: class InvalidDiagnosticSelectionError extends Error {},
 }))
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -16,13 +17,14 @@ vi.mock("next-auth", () => ({ getServerSession: vi.fn() }))
 vi.mock("@/lib/auth", () => ({ authOptions: {} }))
 
 import { GET, POST } from "@/app/api/diagnostics/route"
-import { getFirstDiagnostic, submitDiagnostic, interpreterScore } from "@/lib/services/diagnosticService"
+import { evaluateDiagnostic, getFirstDiagnostic } from "@/lib/services/diagnosticService"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 
 const mockGetFirstDiagnostic = vi.mocked(getFirstDiagnostic)
 const mockGetServerSession = vi.mocked(getServerSession)
 const mockFindMany = vi.mocked(prisma.question.findMany)
+const mockEvaluate = vi.mocked(evaluateDiagnostic)
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -45,7 +47,7 @@ describe("GET /api/diagnostics", () => {
 describe("POST /api/diagnostics", () => {
   it("calcule le score et retourne saved:false pour un visiteur anonyme", async () => {
     mockGetServerSession.mockResolvedValue(null)
-    mockFindMany.mockResolvedValue([{ pointsAssocies: 50 }, { pointsAssocies: 100 }] as any)
+    mockEvaluate.mockResolvedValue({ score: 150, interpretation: "MODERE" })
 
     const req = new NextRequest("http://localhost:3000/api/diagnostics", {
       method: "POST",

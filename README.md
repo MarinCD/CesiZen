@@ -20,7 +20,7 @@ CESIZen est une plateforme web de santé mentale permettant aux utilisateurs d'�
 
 ## Stack technique
 
-- **Framework** : [Next.js 14](https://nextjs.org/) (App Router) — TypeScript
+- **Framework** : [Next.js 16](https://nextjs.org/) (App Router) — React 19 et TypeScript
 - **Base de données** : MySQL via [Prisma ORM](https://www.prisma.io/)
 - **Authentification** : [NextAuth.js](https://next-auth.js.org/) (JWT + sessions)
 - **UI** : [Tailwind CSS](https://tailwindcss.com/) + [Radix UI](https://www.radix-ui.com/)
@@ -31,7 +31,7 @@ CESIZen est une plateforme web de santé mentale permettant aux utilisateurs d'�
 
 ## Prérequis
 
-- [Node.js](https://nodejs.org/) >= 18
+- [Node.js](https://nodejs.org/) >= 20.9
 - [MySQL](https://www.mysql.com/) >= 8
 - npm >= 9
 
@@ -63,17 +63,30 @@ DATABASE_URL="mysql://USER:PASSWORD@localhost:3306/cesizen"
 # NextAuth — clé secrète (générer avec : openssl rand -base64 32)
 NEXTAUTH_SECRET="ta_cle_secrete_ici"
 NEXTAUTH_URL="http://localhost:3000"
+
+# Pseudonymisation : générer deux secrets distincts
+AUDIT_HMAC_KEY="une_autre_cle_secrete"
+RATE_LIMIT_HMAC_KEY="encore_une_cle_secrete"
+
+# Laisser à 0 sans hébergement certifié HDS validé
+HDS_COMPLIANT_STORAGE="0"
 ```
 
 ### 4. Créer la base de données
 
 ```bash
 # Appliquer le schéma Prisma
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 
 # (Optionnel) Insérer les données de démonstration
 npx prisma db seed
 ```
+
+Si la base existait avant l'introduction des migrations versionnées, ne lance pas la baseline
+directement dessus. Après une sauvegarde vérifiée, utilise d'abord `npx prisma db push` pour
+ajouter les champs de durcissement, puis marque la baseline comme appliquée avec
+`npx prisma migrate resolve --applied 20260813170000_baseline`. Cette opération n'est nécessaire
+qu'une fois pour la base historique.
 
 ### 5. Lancer le serveur de développement
 
@@ -123,6 +136,8 @@ Les tâches sont suivies via **GitHub Issues** organisées en milestones corresp
 
 - [Voir les issues](https://github.com/MarinCD/CesiZen/issues)
 - [Voir le tableau de bord projet](https://github.com/users/MarinCD/projects/2)
+- [Consulter la stratégie de maintenance](docs/MAINTENANCE.md)
+- [Consulter la procédure de sauvegarde/restauration](docs/BACKUP_RESTORE.md)
 
 ---
 

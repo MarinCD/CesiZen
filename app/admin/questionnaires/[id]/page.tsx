@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function QuestionnaireDetailPage({ params }: Props) {
-  const questionnaire = await getQuestionnaireById(parseInt(params.id))
+  const { id } = await params
+  const questionnaire = await getQuestionnaireById(parseInt(id))
   if (!questionnaire) notFound()
 
   return (
