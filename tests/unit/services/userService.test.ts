@@ -10,7 +10,7 @@ vi.mock("@/lib/prisma", () => ({
       delete: vi.fn(),
       count: vi.fn(),
     },
-    resultatDiagnostic: { count: vi.fn(), findMany: vi.fn() },
+    resultatDiagnostic: { count: vi.fn(), findMany: vi.fn(), groupBy: vi.fn() },
     information: { count: vi.fn() },
   },
 }))
@@ -24,7 +24,8 @@ import {
   deleteUser,
   getGlobalStats,
   getRecentUsers,
-  getRecentDiagnostics,
+  getRepartitionStress,
+  SEUIL_K_ANONYMAT,
 } from "@/lib/services/userService"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
@@ -101,11 +102,36 @@ describe("userService", () => {
     expect(vi.mocked(prisma.utilisateur.findMany).mock.calls[0][0].take).toBe(3)
   })
 
-  it("getRecentDiagnostics inclut utilisateur et diagnostic", async () => {
-    vi.mocked(prisma.resultatDiagnostic.findMany).mockResolvedValue([] as any)
-    await getRecentDiagnostics()
-    const args = vi.mocked(prisma.resultatDiagnostic.findMany).mock.calls[0][0]
-    expect(args.include).toHaveProperty("utilisateur")
-    expect(args.include).toHaveProperty("diagnostic")
+  it("getRepartitionStress n'interroge jamais l'identité des répondants", async () => {
+    vi.mocked(prisma.resultatDiagnostic.groupBy).mockResolvedValue([] as any)
+    await getRepartitionStress()
+    const args = vi.mocked(prisma.resultatDiagnostic.groupBy).mock.calls[0][0] as any
+    expect(args.by).toEqual(["interpretation"])
+    expect(args).not.toHaveProperty("include")
+    expect(JSON.stringify(args)).not.toContain("utilisateur")
+  })
+
+  it("getRepartitionStress masque toute la répartition si un effectif est sous le seuil", async () => {
+    vi.mocked(prisma.resultatDiagnostic.groupBy).mockResolvedValue([
+      { interpretation: "FAIBLE", _count: { _all: 12 } },
+      { interpretation: "MODERE", _count: { _all: SEUIL_K_ANONYMAT } },
+      { interpretation: "ELEVE", _count: { _all: 1 } },
+    ] as any)
+
+    const { total, repartition } = await getRepartitionStress()
+    expect(total).toBe(18)
+    expect(repartition.every((r) => r.effectif === null)).toBe(true)
+  })
+
+  it("getRepartitionStress publie la répartition quand tous les effectifs atteignent le seuil", async () => {
+    vi.mocked(prisma.resultatDiagnostic.groupBy).mockResolvedValue([
+      { interpretation: "FAIBLE", _count: { _all: 12 } },
+      { interpretation: "MODERE", _count: { _all: SEUIL_K_ANONYMAT } },
+      { interpretation: "ELEVE", _count: { _all: 7 } },
+    ] as any)
+
+    const { total, repartition } = await getRepartitionStress()
+    expect(total).toBe(24)
+    expect(repartition.map((r) => r.effectif)).toEqual([12, SEUIL_K_ANONYMAT, 7])
   })
 })

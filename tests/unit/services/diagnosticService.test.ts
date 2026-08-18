@@ -12,6 +12,7 @@ vi.mock("@/lib/prisma", () => ({
 import {
   getQuestionnaires,
   getQuestionnaireById,
+  getQuestionnaireAvecBareme,
   getDiagnosticWithQuestions,
   submitDiagnostic,
   getHistoriqueDiagnostics,
@@ -39,11 +40,31 @@ describe("diagnosticService", () => {
     expect(args.include).toHaveProperty("createur")
   })
 
-  it("getQuestionnaireById ordonne les questions par points décroissants", async () => {
+  it("getQuestionnaireById n'expose pas le barème par défaut", async () => {
     vi.mocked(prisma.questionnaire.findUnique).mockResolvedValue(null)
     await getQuestionnaireById(1)
-    const args = vi.mocked(prisma.questionnaire.findUnique).mock.calls[0][0]
-    expect((args?.include as any)?.questions?.orderBy).toEqual({ pointsAssocies: "desc" })
+    const questions = (vi.mocked(prisma.questionnaire.findUnique).mock.calls[0][0]?.include as any)
+      ?.questions
+    expect(questions.select).toEqual({ id: true, texte: true })
+    // L'ordre par points décroissants reconstituerait la pondération.
+    expect(questions.orderBy).toEqual({ id: "asc" })
+  })
+
+  it("getQuestionnaireAvecBareme inclut la pondération (back-office)", async () => {
+    vi.mocked(prisma.questionnaire.findUnique).mockResolvedValue(null)
+    await getQuestionnaireAvecBareme(1)
+    const questions = (vi.mocked(prisma.questionnaire.findUnique).mock.calls[0][0]?.include as any)
+      ?.questions
+    expect(questions.select).toBeUndefined()
+    expect(questions.orderBy).toEqual({ pointsAssocies: "desc" })
+  })
+
+  it("getQuestionnaires n'expose pas le barème par défaut", async () => {
+    vi.mocked(prisma.questionnaire.findMany).mockResolvedValue([] as any)
+    await getQuestionnaires()
+    const questions = (vi.mocked(prisma.questionnaire.findMany).mock.calls[0][0].include as any)
+      .questions
+    expect(questions.select).toEqual({ id: true, texte: true })
   })
 
   it("getDiagnosticWithQuestions inclut le questionnaire et ses questions", async () => {
@@ -117,11 +138,13 @@ describe("diagnosticService", () => {
     expect(args.orderBy).toEqual({ dateRealisation: "desc" })
   })
 
-  it("getFirstDiagnostic inclut questionnaire et questions ordonnées", async () => {
+  it("getFirstDiagnostic sert les questions sans leur pondération", async () => {
     vi.mocked(prisma.diagnostic.findFirst).mockResolvedValue(null)
     await getFirstDiagnostic()
     const args = vi.mocked(prisma.diagnostic.findFirst).mock.calls[0]?.[0]
     expect(args?.include).toHaveProperty("questionnaire")
+    const questions = (args?.include as any).questionnaire.include.questions
+    expect(questions.select).toEqual({ id: true, texte: true })
   })
 
   it("createQuestionnaire crée diagnostic imbriqué + questions + réponses", async () => {

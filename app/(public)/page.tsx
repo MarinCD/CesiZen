@@ -95,8 +95,8 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Commencez dès aujourd'hui</h2>
           <p className="mb-8 opacity-90">
-            Créez votre compte gratuitement et accédez à tous les outils de CESIZen. Vos données
-            sont hébergées en France et protégées conformément au RGPD.
+            Créez votre compte gratuitement et accédez aux outils de CESIZen. Vous gardez la main
+            sur vos informations depuis votre profil.
           </p>
           <Button variant="secondary" size="lg" asChild>
             <Link href="/register">Créer mon compte gratuit</Link>

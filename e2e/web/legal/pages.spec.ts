@@ -5,13 +5,15 @@ test.describe("Pages légales RGPD", () => {
     await page.goto("/confidentialite")
     await expect(page.getByRole("heading", { name: /Politique de confidentialité/i })).toBeVisible()
     await expect(page.getByText(/portabilité/i)).toBeVisible()
-    await expect(page.getByText(/effacement|oubli/i)).toBeVisible()
+    await expect(page.getByText("l'effacement", { exact: true })).toBeVisible()
+    await expect(page.getByText(/durées de conservation/i)).toBeVisible()
     await expect(page.getByText(/CNIL/i)).toBeVisible()
   })
 
   test("les mentions légales sont accessibles", async ({ page }) => {
     await page.goto("/mentions-legales")
     await expect(page.getByRole("heading", { name: /Mentions légales/i })).toBeVisible()
+    await expect(page.getByText(/Marin Cadro/i).first()).toBeVisible()
     await expect(page.getByText(/AlwaysData/i).first()).toBeVisible()
   })
 

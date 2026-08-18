@@ -12,8 +12,7 @@ export function Footer() {
               CESIZen
             </div>
             <p className="text-sm text-muted-foreground">
-              Plateforme de santé mentale et de bien-être, développée en partenariat avec le
-              Ministère de la Santé et de la Prévention.
+              Projet pédagogique consacré à la prévention du stress et au bien-être.
             </p>
           </div>
 
@@ -37,7 +36,7 @@ export function Footer() {
 
         <div className="border-t mt-8 pt-6 text-center text-sm text-muted-foreground">
           <p>
-            &copy; {new Date().getFullYear()} CESIZen — Hébergé en France par AlwaysData
+            &copy; {new Date().getFullYear()} CESIZen — Projet pédagogique CESI
           </p>
           <p className="mt-1">
             Les informations de ce site ne remplacent pas un avis médical professionnel.

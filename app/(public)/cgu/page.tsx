@@ -18,9 +18,9 @@ export default function CguPage() {
 
       <h2>2. Accès au service</h2>
       <p>
-        L'accès aux articles d'information est libre. La réalisation des diagnostics et la
-        consultation de l'historique nécessitent la création d'un compte. L'utilisateur
-        s'engage à fournir des informations exactes.
+        L'accès aux articles et au questionnaire est libre. La gestion du profil et la consultation
+        d'un historique, lorsqu'il est disponible, nécessitent un compte. L'utilisateur s'engage à
+        fournir des informations exactes lors de son inscription.
       </p>
 
       <h2>3. Caractère informatif des diagnostics</h2>
