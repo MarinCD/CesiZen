@@ -45,10 +45,27 @@ export async function saveDiagnosticResult(data: {
   return prisma.resultatDiagnostic.create({ data })
 }
 
-export async function getQuestionnaires(options?: { includeCreateur?: boolean }) {
+
+// Le barème (points par question) est une donnée d'administration : servi au
+// répondant, il oriente les réponses et permet de reconstituer son propre score.
+// L'ordre par points décroissants le trahit tout autant que la valeur elle-même :
+// les écrans publics reçoivent donc le texte des questions dans l'ordre de saisie.
+const QUESTIONS_PUBLIQUES = {
+  select: { id: true, texte: true },
+  orderBy: { id: "asc" },
+} as const
+
+const QUESTIONS_AVEC_BAREME = {
+  orderBy: { pointsAssocies: "desc" },
+} as const
+
+export async function getQuestionnaires(options?: {
+  includeCreateur?: boolean
+  includeBareme?: boolean
+}) {
   return prisma.questionnaire.findMany({
     include: {
-      questions: true,
+      questions: options?.includeBareme ? QUESTIONS_AVEC_BAREME : QUESTIONS_PUBLIQUES,
       diagnostics: true,
       ...(options?.includeCreateur
         ? { createur: { select: { nom: true, prenom: true } } }
@@ -62,7 +79,18 @@ export async function getQuestionnaireById(id: number) {
   return prisma.questionnaire.findUnique({
     where: { id },
     include: {
-      questions: { orderBy: { pointsAssocies: "desc" } },
+      questions: QUESTIONS_PUBLIQUES,
+      diagnostics: true,
+    },
+  })
+}
+
+/** Variante réservée aux écrans d'édition du back-office : inclut la pondération. */
+export async function getQuestionnaireAvecBareme(id: number) {
+  return prisma.questionnaire.findUnique({
+    where: { id },
+    include: {
+      questions: QUESTIONS_AVEC_BAREME,
       diagnostics: true,
     },
   })
@@ -107,7 +135,7 @@ export async function getFirstDiagnostic() {
     include: {
       questionnaire: {
         include: {
-          questions: { orderBy: { pointsAssocies: "desc" } },
+          questions: QUESTIONS_PUBLIQUES,
         },
       },
     },

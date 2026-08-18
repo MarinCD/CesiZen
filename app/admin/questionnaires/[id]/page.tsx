@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { getQuestionnaireById } from "@/lib/services/diagnosticService"
+import { getQuestionnaireAvecBareme } from "@/lib/services/diagnosticService"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ interface Props {
 
 export default async function QuestionnaireDetailPage({ params }: Props) {
   const { id } = await params
-  const questionnaire = await getQuestionnaireById(parseInt(id))
+  const questionnaire = await getQuestionnaireAvecBareme(parseInt(id))
   if (!questionnaire) notFound()
 
   return (

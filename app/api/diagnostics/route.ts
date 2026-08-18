@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       score,
       interpretation,
       saved: false,
-      storageDisabledReason: "L'historisation nécessite un hébergement déclaré conforme HDS.",
+      storageDisabledReason: "L'historisation est désactivée sur cet environnement.",
     })
   }
 
