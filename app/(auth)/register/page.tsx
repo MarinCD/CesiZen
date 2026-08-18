@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, CheckCircle } from "lucide-react"
+import { AlertCircle } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -103,9 +103,11 @@ export default function RegisterPage() {
               aria-required="true"
             />
             <Label htmlFor="consentementRGPD" className="text-sm font-normal leading-relaxed cursor-pointer">
-              J'accepte que mes données personnelles soient traitées par CESIZen conformément à la{" "}
-              <Link href="#" className="text-primary underline">politique de confidentialité</Link>{" "}
-              et au RGPD. Mes données sont hébergées en France et ne sont jamais transmises à des tiers.
+              J'ai pris connaissance de la{" "}
+              <Link href="/confidentialite" className="text-primary underline hover:text-primary/80">
+                politique de confidentialité
+              </Link>{" "}
+              qui explique l'utilisation de mes données et les moyens d'exercer mes droits.
             </Label>
           </div>
           {errors.consentementRGPD && (

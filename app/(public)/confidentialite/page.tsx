@@ -1,101 +1,212 @@
+import Link from "next/link"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité — CESIZen",
-  description: "Politique de protection des données personnelles de CESIZen.",
+  description: "Informations sur l'utilisation et la protection des données dans CESIZen.",
 }
 
 export default function ConfidentialitePage() {
   return (
-    <article className="max-w-3xl mx-auto px-4 py-10 prose prose-sm prose-headings:text-gray-900 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-xl prose-h2:mt-8 prose-p:text-muted-foreground">
+    <article className="max-w-4xl mx-auto px-4 py-10 prose prose-sm prose-headings:text-gray-900 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-xl prose-h2:mt-8 prose-h3:text-base prose-p:text-muted-foreground prose-li:text-muted-foreground">
       <h1>Politique de confidentialité</h1>
-      <p className="text-sm">Dernière mise à jour : {new Date().toLocaleDateString("fr-FR")}</p>
+      <p className="text-sm">Dernière mise à jour : 18 août 2026</p>
+      <p>
+        Cette politique explique quelles données sont utilisées par CESIZen, pourquoi elles le sont
+        et comment exercer vos droits. Elle concerne l'environnement de recette du projet
+        pédagogique.
+      </p>
 
       <h2>1. Responsable du traitement</h2>
       <p>
-        CESIZen est édité dans le cadre d'un projet pédagogique CESI. Pour toute question relative
-        à vos données personnelles, contactez le responsable du traitement à l'adresse indiquée
-        dans les mentions légales.
+        Le responsable du traitement est Marin Cadro, éditeur non professionnel de CESIZen. Pour
+        toute question ou demande concernant vos données, écrivez à{" "}
+        <a href="mailto:marin.coc22@gmail.com">marin.coc22@gmail.com</a>.
       </p>
 
-      <h2>2. Données collectées</h2>
-      <ul>
-        <li><strong>Identité :</strong> nom, prénom, adresse e-mail.</li>
-        <li><strong>Authentification :</strong> mot de passe (haché avec bcrypt, jamais stocké en clair).</li>
-        <li>
-          <strong>Données de santé (article 9 du RGPD) :</strong> résultats des auto-diagnostics
-          de stress (score, interprétation, date). Ces données sont sensibles et bénéficient
-          d'une protection renforcée.
-        </li>
-        <li>
-          <strong>Données de connexion :</strong> référence pseudonymisée de l'adresse IP et date
-          d'accès (l'adresse IP brute n'est pas conservée dans le journal d'audit).
-        </li>
-      </ul>
+      <h2>2. Données utilisées</h2>
+      <div className="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Catégorie</th>
+              <th>Données concernées</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Compte</td>
+              <td>Nom, prénom, adresse e-mail, rôle, dates de création et de dernière activité.</td>
+            </tr>
+            <tr>
+              <td>Authentification</td>
+              <td>Mot de passe haché, informations de session et date de changement du mot de passe.</td>
+            </tr>
+            <tr>
+              <td>Questionnaire</td>
+              <td>
+                Réponses transmises pour calculer le score. Elles ne sont pas enregistrées telles
+                quelles. Lorsque l'historique est activé, seuls le score, l'interprétation, la date
+                et le diagnostic concerné sont associés au compte.
+              </td>
+            </tr>
+            <tr>
+              <td>Sécurité</td>
+              <td>
+                Actions réalisées, horodatages, identifiants de comptes concernés et références
+                pseudonymisées des adresses IP.
+              </td>
+            </tr>
+            <tr>
+              <td>Préférences locales</td>
+              <td>
+                Réglages d'accessibilité et mémorisation de la fermeture du message d'information
+                sur les cookies, enregistrés dans le navigateur.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <h2>3. Finalités et base légale</h2>
-      <ul>
-        <li>Création et gestion du compte utilisateur — <em>exécution contractuelle</em>.</li>
-        <li>Réalisation et historisation des diagnostics — <em>consentement explicite</em>.</li>
-        <li>Sécurité et prévention des fraudes — <em>intérêt légitime</em>.</li>
-        <li>Respect des obligations légales (conservation des journaux) — <em>obligation légale</em>.</li>
-      </ul>
-
-      <h2>4. Durée de conservation</h2>
-      <ul>
-        <li>Compte utilisateur : jusqu'à suppression par l'utilisateur ou inactivité &gt; 3 ans.</li>
-        <li>Résultats de diagnostic : 24 mois après la dernière utilisation.</li>
-        <li>Journaux d'audit : 12 mois.</li>
-      </ul>
-
-      <h2>5. Destinataires</h2>
+      <h2>3. Finalités et bases légales</h2>
+      <div className="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisation</th>
+              <th>Objectif</th>
+              <th>Base légale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Compte et authentification</td>
+              <td>Créer le compte, permettre la connexion et gérer le profil.</td>
+              <td>Exécution du service demandé.</td>
+            </tr>
+            <tr>
+              <td>Questionnaire de stress</td>
+              <td>Calculer un résultat indicatif et, si la fonction est disponible, l'ajouter à l'historique.</td>
+              <td>Consentement explicite donné avant de commencer le questionnaire.</td>
+            </tr>
+            <tr>
+              <td>Sécurité</td>
+              <td>Protéger les comptes, limiter les tentatives abusives et rechercher les incidents.</td>
+              <td>Intérêt légitime de l'éditeur à sécuriser le service.</td>
+            </tr>
+            <tr>
+              <td>Demandes légales</td>
+              <td>Répondre à une demande valable d'une autorité compétente.</td>
+              <td>Obligation légale lorsqu'elle s'applique.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <p>
-        Vos données ne sont communiquées à aucun tiers commercial. Elles sont accessibles
-        uniquement à vous-même et, pour les besoins de l'exploitation, aux administrateurs
-        techniques de la plateforme. L'hébergement est assuré par AlwaysData (France).
+        CESIZen ne prend aucune décision produisant un effet juridique à partir du résultat du
+        questionnaire.
+      </p>
+
+      <h2>4. Caractère obligatoire des informations</h2>
+      <p>
+        Le nom, le prénom, l'adresse e-mail et le mot de passe sont nécessaires pour créer un
+        compte. Sans ces informations, l'inscription ne peut pas aboutir. Le questionnaire reste
+        facultatif et peut être utilisé sans compte. La création d'un compte n'impose pas de remplir
+        le questionnaire.
+      </p>
+
+      <h2>5. Durées de conservation</h2>
+      <ul>
+        <li>Compte : jusqu'à sa suppression ou après trois ans d'inactivité.</li>
+        <li>Résultats enregistrés dans l'historique : vingt-quatre mois.</li>
+        <li>Journaux de sécurité : douze mois.</li>
+        <li>Compteurs de limitation des tentatives : deux jours au maximum.</li>
+        <li>Session de connexion : deux heures, avec renouvellement pendant l'utilisation.</li>
+        <li>Préférences locales : jusqu'à leur réinitialisation ou à l'effacement des données du navigateur.</li>
+      </ul>
+      <p>
+        Sur l'environnement de recette actuel, le résultat du questionnaire est calculé mais son
+        enregistrement dans l'historique est désactivé.
+      </p>
+
+      <h2>6. Destinataires et prestataires</h2>
+      <p>
+        Les données sont accessibles à l'utilisateur concerné et, lorsque cela est nécessaire à
+        l'administration ou à la sécurité, aux administrateurs autorisés de CESIZen.
+      </p>
+      <ul>
+        <li>Le fournisseur du VPS assure l'infrastructure de l'application.</li>
+        <li>alwaysdata héberge la base de données.</li>
+        <li>Cloudflare fournit les services DNS et de protection réseau.</li>
+      </ul>
+      <p>
+        CESIZen ne vend pas les données et ne les utilise pas à des fins publicitaires. Elles peuvent
+        être communiquées à une autorité uniquement lorsqu'une règle de droit l'impose. Les garanties
+        contractuelles et les éventuels transferts internationaux dépendent des prestataires retenus
+        pour l'environnement concerné.
+      </p>
+
+      <h2>7. Vos droits</h2>
+      <p>Selon la situation, vous pouvez demander :</p>
+      <ul>
+        <li><strong>l'accès</strong> aux données vous concernant</li>
+        <li><strong>la rectification</strong> d'informations inexactes</li>
+        <li><strong>l'effacement</strong> de votre compte et des données associées</li>
+        <li><strong>la limitation</strong> temporaire d'un traitement</li>
+        <li><strong>l'opposition</strong> à un traitement fondé sur l'intérêt légitime</li>
+        <li><strong>la portabilité</strong> des données que vous avez fournies</li>
+        <li><strong>le retrait du consentement</strong> pour les traitements qui en dépendent</li>
+      </ul>
+      <p>
+        Le profil permet de rectifier les informations, d'exporter les données au format JSON et de
+        supprimer le compte. Une demande peut également être envoyée à{" "}
+        <a href="mailto:marin.coc22@gmail.com">marin.coc22@gmail.com</a>. Une réponse sera apportée
+        dans un délai maximal d'un mois, sauf prolongation autorisée par le RGPD.
       </p>
       <p>
-        <strong>Avertissement :</strong> dans le cadre de ce projet pédagogique, l'hébergement
-        n'est pas certifié HDS (Hébergeur de Données de Santé). Pour une mise en production
-        réelle, une migration vers un hébergeur HDS est requise.
+        Vous pouvez introduire une réclamation auprès de la{" "}
+        <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">
+          Commission nationale de l'informatique et des libertés (CNIL)
+        </a>.
       </p>
 
-      <h2>6. Vos droits</h2>
-      <p>Conformément aux articles 15 à 22 du RGPD, vous disposez des droits suivants :</p>
+      <h2>8. Sécurité</h2>
+      <p>CESIZen applique notamment les mesures suivantes :</p>
       <ul>
-        <li><strong>Accès</strong> : consulter les données vous concernant via votre profil.</li>
-        <li><strong>Rectification</strong> : modifier vos informations sur la page « Mon profil ».</li>
-        <li>
-          <strong>Effacement</strong> (« droit à l'oubli ») : bouton « Supprimer mon compte »
-          sur votre profil. La suppression est immédiate et irréversible.
-        </li>
-        <li>
-          <strong>Portabilité</strong> : bouton « Exporter mes données » sur votre profil
-          (export JSON).
-        </li>
-        <li>
-          <strong>Opposition / limitation</strong> : contactez-nous via les mentions légales.
-        </li>
-        <li>
-          <strong>Réclamation</strong> auprès de la CNIL (
-          <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>).
-        </li>
+        <li>hachage des mots de passe avec bcrypt</li>
+        <li>communications HTTPS sur l'environnement publié</li>
+        <li>contrôles d'accès selon le compte et le rôle</li>
+        <li>limitation des tentatives de connexion et des appels sensibles</li>
+        <li>journalisation avec pseudonymisation des références réseau</li>
+        <li>sauvegardes, mises à jour et contrôles automatisés du code</li>
       </ul>
-
-      <h2>7. Sécurité</h2>
-      <ul>
-        <li>Mots de passe hashés (bcrypt).</li>
-        <li>Communication chiffrée (HTTPS) en production.</li>
-        <li>En-têtes HTTP de sécurité (CSP, HSTS, X-Frame-Options…).</li>
-        <li>Journalisation des accès aux données sensibles.</li>
-        <li>Limitation du nombre de tentatives de connexion.</li>
-      </ul>
-
-      <h2>8. Cookies</h2>
       <p>
-        Le site utilise uniquement des cookies strictement nécessaires à son fonctionnement
-        (session d'authentification). Aucun cookie publicitaire ou de mesure d'audience tierce
-        n'est déposé.
+        Aucune mesure ne supprime totalement les risques. En cas d'incident confirmé, les personnes
+        concernées seront informées lorsque la réglementation l'exige.
+      </p>
+
+      <h2>9. Cookies et stockage local</h2>
+      <p>
+        CESIZen utilise uniquement un cookie de session nécessaire à l'authentification. Les réglages
+        d'accessibilité et la fermeture du message d'information sont mémorisés dans le stockage local
+        du navigateur. Aucun traceur publicitaire ni outil tiers de mesure d'audience n'est utilisé.
+      </p>
+      <p>
+        Ces éléments sont nécessaires au service ou enregistrés à la demande de l'utilisateur. Ils ne
+        nécessitent donc pas de consentement préalable. Ils peuvent être supprimés depuis les réglages
+        du navigateur.
+      </p>
+
+      <h2>10. Évolution de la politique</h2>
+      <p>
+        Cette politique peut être mise à jour pour suivre les évolutions de CESIZen. La date affichée
+        en haut de la page permet d'identifier la version applicable. Une modification importante sera
+        signalée dans l'application.
+      </p>
+
+      <p>
+        Pour identifier l'éditeur et les prestataires techniques, consultez les{" "}
+        <Link href="/mentions-legales">mentions légales</Link>.
       </p>
     </article>
   )

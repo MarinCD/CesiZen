@@ -7,10 +7,11 @@ import { Progress } from "@/components/ui/progress"
 import { CheckSquare, Square, ChevronLeft, ChevronRight, Send, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 
+// Le barème n'est pas transmis au navigateur : le score est calculé côté
+// serveur à partir des identifiants de questions cochées.
 interface Question {
   id: number
   texte: string
-  pointsAssocies: number
 }
 
 interface Props {
@@ -64,15 +65,15 @@ export function QuestionnaireForm({ diagnosticId, questions }: Props) {
         <div className="flex items-start gap-3">
           <ShieldAlert className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="space-y-2">
-            <h2 className="font-semibold text-gray-900">Consentement éclairé</h2>
+            <h2 className="font-semibold text-gray-900">Avant de commencer</h2>
             <p className="text-sm text-muted-foreground">
-              Ce diagnostic collecte des informations relatives à votre santé (données sensibles
-              au sens de l'article 9 du RGPD). Vos réponses sont utilisées pour calculer un score
-              indicatif et conservées dans votre historique personnel.
+              Ce questionnaire porte sur des événements de vie et peut révéler des informations sur
+              votre niveau de stress. Vos réponses servent uniquement à calculer un résultat
+              indicatif. Elles ne sont pas enregistrées telles quelles.
             </p>
             <p className="text-sm text-muted-foreground">
-              Vous pouvez à tout moment consulter, exporter ou supprimer vos données depuis votre
-              page profil. Consultez notre{" "}
+              Si vous êtes connecté et que l'historique est disponible, le score et son
+              interprétation peuvent être ajoutés à votre compte. Consultez la{" "}
               <Link href="/confidentialite" className="underline hover:text-foreground">
                 politique de confidentialité
               </Link>{" "}
@@ -89,8 +90,8 @@ export function QuestionnaireForm({ diagnosticId, questions }: Props) {
             className="mt-1 h-4 w-4 rounded border-gray-300"
           />
           <span>
-            Je consens explicitement au traitement de mes données de santé pour la réalisation de
-            ce diagnostic et leur conservation dans mon historique.
+            J'accepte le traitement de mes réponses pour calculer mon résultat et, si cette fonction
+            est disponible, enregistrer ce résultat dans mon historique.
           </span>
         </label>
 
@@ -133,7 +134,6 @@ export function QuestionnaireForm({ diagnosticId, questions }: Props) {
                 </div>
                 <div className="flex-1">
                   <span className="font-medium">{question.texte}</span>
-                  <span className="ml-2 text-sm text-muted-foreground">({question.pointsAssocies} pts)</span>
                 </div>
               </div>
             </button>

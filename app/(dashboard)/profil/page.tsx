@@ -217,7 +217,8 @@ export default function ProfilPage() {
         <CardHeader>
           <CardTitle className="text-destructive">Zone dangereuse</CardTitle>
           <CardDescription>
-            La suppression de votre compte est irréversible et efface toutes vos données (RGPD — droit à l'effacement).
+            La suppression est irréversible. Elle efface le compte et ses données associées. Les
+            journaux de sécurité minimisés peuvent être conservés pendant leur durée prévue.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -18,9 +18,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 })
   }
   const sessionUserId = parseInt((session.user as any).id)
-  const isAdmin = (session.user as any).role === "ADMINISTRATEUR"
 
-  if (sessionUserId !== userId && !isAdmin) {
+  // L'export contient des données de santé : il reste strictement personnel.
+  // Un administrateur n'y a pas accès, y compris pour instruire une demande
+  // RGPD — celle-ci se traite en accompagnant la personne dans son propre espace.
+  if (sessionUserId !== userId) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
   }
 
@@ -63,7 +65,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const payload = {
     exportedAt: new Date().toISOString(),
     notice:
-      "Export RGPD (article 20 — droit à la portabilité). Ces données contiennent des informations relatives à votre santé : conservez-les en lieu sûr.",
+      "Export RGPD (article 20 — droit à la portabilité). Ce fichier contient des informations personnelles et doit être conservé en lieu sûr.",
     utilisateur,
   }
 

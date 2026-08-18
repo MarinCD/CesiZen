@@ -10,7 +10,7 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
     .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
   consentementRGPD: z.literal(true, {
-    errorMap: () => ({ message: "Vous devez accepter les conditions RGPD" }),
+    errorMap: () => ({ message: "Vous devez confirmer avoir lu la politique de confidentialité" }),
   }),
 })
 

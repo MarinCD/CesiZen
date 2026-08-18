@@ -48,15 +48,11 @@ describe("GET /api/utilisateurs/[id]/export", () => {
     expect(res.headers.get("content-disposition")).toMatch(/cesizen-export-utilisateur-42/)
   })
 
-  it("un admin peut exporter le compte d'un autre", async () => {
+  it("refuse 403 à un administrateur sur le compte d'un tiers (cloisonnement santé)", async () => {
     mockSession.mockResolvedValue({ user: { id: "1", role: "ADMINISTRATEUR" } } as any)
-    mockFind.mockResolvedValue({
-      id: 42, nom: "X", prenom: "Y", email: "x@y.fr",
-      role: "UTILISATEUR", dateCreation: new Date(), consentementRGPD: true,
-      resultatsDiagnostic: [], informations: [],
-    } as any)
     const res = await GET(req(), { params: { id: "42" } })
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(403)
+    expect(mockFind).not.toHaveBeenCalled()
   })
 
   it("retourne 404 si l'utilisateur n'existe pas", async () => {
