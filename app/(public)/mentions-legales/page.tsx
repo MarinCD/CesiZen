@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Metadata } from "next"
+import { LegalPage } from "@/components/legal/LegalPage"
 
 export const metadata: Metadata = {
   title: "Mentions légales — CESIZen",
@@ -8,10 +9,11 @@ export const metadata: Metadata = {
 
 export default function MentionsLegalesPage() {
   return (
-    <article className="max-w-3xl mx-auto px-4 py-10 prose prose-sm prose-headings:text-gray-900 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-xl prose-h2:mt-8 prose-p:text-muted-foreground prose-li:text-muted-foreground">
-      <h1>Mentions légales</h1>
-      <p className="text-sm">Dernière mise à jour : 18 août 2026</p>
-
+    <LegalPage
+      title="Mentions légales"
+      updatedAt="18 août 2026"
+      description="Retrouvez les informations relatives à l'édition, à l'hébergement et à l'utilisation de CESIZen."
+    >
       <h2>1. Édition du site</h2>
       <p>
         CESIZen est un projet pédagogique édité à titre non professionnel par Marin Cadro dans le
@@ -73,6 +75,6 @@ export default function MentionsLegalesPage() {
         d'exercice des droits sont présentés dans la{" "}
         <Link href="/confidentialite">politique de confidentialité</Link>.
       </p>
-    </article>
+    </LegalPage>
   )
 }

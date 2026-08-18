@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { LegalPage } from "@/components/legal/LegalPage"
 
 export const metadata: Metadata = {
   title: "Conditions générales d'utilisation — CESIZen",
@@ -7,9 +8,11 @@ export const metadata: Metadata = {
 
 export default function CguPage() {
   return (
-    <article className="max-w-3xl mx-auto px-4 py-10 prose prose-sm prose-headings:text-gray-900 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-xl prose-h2:mt-8 prose-p:text-muted-foreground">
-      <h1>Conditions générales d'utilisation</h1>
-
+    <LegalPage
+      title="Conditions générales d'utilisation"
+      updatedAt="18 août 2026"
+      description="Ces conditions définissent les règles d'utilisation de CESIZen et les limites du service proposé dans le cadre de ce projet pédagogique."
+    >
       <h2>1. Objet</h2>
       <p>
         Les présentes CGU régissent l'utilisation de la plateforme CESIZen, dédiée à la
@@ -57,6 +60,6 @@ export default function CguPage() {
         Les présentes CGU peuvent être modifiées. La version applicable est celle en vigueur à
         la date d'utilisation du service.
       </p>
-    </article>
+    </LegalPage>
   )
 }
