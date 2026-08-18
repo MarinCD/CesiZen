@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Metadata } from "next"
+import { LegalPage } from "@/components/legal/LegalPage"
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité — CESIZen",
@@ -8,15 +9,11 @@ export const metadata: Metadata = {
 
 export default function ConfidentialitePage() {
   return (
-    <article className="max-w-4xl mx-auto px-4 py-10 prose prose-sm prose-headings:text-gray-900 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-xl prose-h2:mt-8 prose-h3:text-base prose-p:text-muted-foreground prose-li:text-muted-foreground">
-      <h1>Politique de confidentialité</h1>
-      <p className="text-sm">Dernière mise à jour : 18 août 2026</p>
-      <p>
-        Cette politique explique quelles données sont utilisées par CESIZen, pourquoi elles le sont
-        et comment exercer vos droits. Elle concerne l'environnement de recette du projet
-        pédagogique.
-      </p>
-
+    <LegalPage
+      title="Politique de confidentialité"
+      updatedAt="18 août 2026"
+      description="Cette politique explique quelles données sont utilisées par CESIZen, pourquoi elles le sont et comment exercer vos droits. Elle concerne l'environnement de recette du projet pédagogique."
+    >
       <h2>1. Responsable du traitement</h2>
       <p>
         Le responsable du traitement est Marin Cadro, éditeur non professionnel de CESIZen. Pour
@@ -25,7 +22,7 @@ export default function ConfidentialitePage() {
       </p>
 
       <h2>2. Données utilisées</h2>
-      <div className="overflow-x-auto">
+      <div className="legal-table-wrap">
         <table>
           <thead>
             <tr>
@@ -69,7 +66,7 @@ export default function ConfidentialitePage() {
       </div>
 
       <h2>3. Finalités et bases légales</h2>
-      <div className="overflow-x-auto">
+      <div className="legal-table-wrap">
         <table>
           <thead>
             <tr>
@@ -208,6 +205,6 @@ export default function ConfidentialitePage() {
         Pour identifier l'éditeur et les prestataires techniques, consultez les{" "}
         <Link href="/mentions-legales">mentions légales</Link>.
       </p>
-    </article>
+    </LegalPage>
   )
 }
