@@ -130,13 +130,40 @@ export async function getRecentUsers(limit = 5) {
   })
 }
 
-export async function getRecentDiagnostics(limit = 5) {
-  return prisma.resultatDiagnostic.findMany({
-    take: limit,
-    orderBy: { dateRealisation: "desc" },
-    include: {
-      utilisateur: { select: { nom: true, prenom: true, email: true } },
-      diagnostic: { select: { nom: true } },
-    },
+// Effectif minimal en dessous duquel un chiffre n'est pas affiché : sur une
+// population réduite, « 1 diagnostic élevé ce mois-ci » se recoupe avec la liste
+// des derniers inscrits et ré-identifie la personne.
+export const SEUIL_K_ANONYMAT = 5
+
+const PALIERS = ["FAIBLE", "MODERE", "ELEVE"] as const
+
+/**
+ * Répartition anonyme des niveaux de stress pour le back-office.
+ *
+ * Aucun rôle applicatif — administrateur compris — ne dispose d'un écran
+ * associant une identité à un résultat de diagnostic : le personnel
+ * d'administration exploite des agrégats, jamais des dossiers individuels.
+ */
+export async function getRepartitionStress() {
+  const groupes = await prisma.resultatDiagnostic.groupBy({
+    by: ["interpretation"],
+    _count: { _all: true },
   })
+
+  const total = groupes.reduce((somme, g) => somme + g._count._all, 0)
+  const effectifs = PALIERS.map((palier) => ({
+    palier,
+    effectif: groupes.find((g) => g.interpretation === palier)?._count._all ?? 0,
+  }))
+
+  // Si une seule catégorie était masquée, son effectif resterait déductible en
+  // soustrayant les catégories visibles du total. La répartition complète reste
+  // donc masquée tant que chaque catégorie n'atteint pas le seuil.
+  const repartitionPubliable = effectifs.every(({ effectif }) => effectif >= SEUIL_K_ANONYMAT)
+  const repartition = effectifs.map(({ palier, effectif }) => ({
+    palier,
+    effectif: repartitionPubliable ? effectif : null,
+  }))
+
+  return { total, seuil: SEUIL_K_ANONYMAT, repartition }
 }

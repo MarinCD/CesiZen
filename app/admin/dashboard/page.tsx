@@ -1,20 +1,20 @@
-import { getGlobalStats, getRecentUsers, getRecentDiagnostics } from "@/lib/services/userService"
+import { getGlobalStats, getRecentUsers, getRepartitionStress } from "@/lib/services/userService"
 import { StatsCard } from "@/components/admin/StatsCard"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Brain, FileText, TrendingUp } from "lucide-react"
 
 export default async function AdminDashboardPage() {
-  const [stats, recentUsers, recentDiagnostics] = await Promise.all([
+  const [stats, recentUsers, repartition] = await Promise.all([
     getGlobalStats(),
     getRecentUsers(5),
-    getRecentDiagnostics(5),
+    getRepartitionStress(),
   ])
 
-  const getBadge = (interpretation: string | null) => {
-    if (interpretation === "FAIBLE") return <Badge variant="success">Faible</Badge>
-    if (interpretation === "MODERE") return <Badge variant="warning">Modéré</Badge>
-    return <Badge variant="danger">Élevé</Badge>
+  const libelles: Record<string, { texte: string; badge: "success" | "warning" | "danger" }> = {
+    FAIBLE: { texte: "Faible", badge: "success" },
+    MODERE: { texte: "Modéré", badge: "warning" },
+    ELEVE: { texte: "Élevé", badge: "danger" },
   }
 
   return (
@@ -84,29 +84,44 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Derniers diagnostics */}
+        {/* Répartition anonyme des niveaux de stress */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Derniers diagnostics</CardTitle>
+            <CardTitle className="text-lg">Niveaux de stress</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Données de santé : agrégats anonymes uniquement. Les résultats individuels ne
+              sont accessibles qu'à la personne concernée.
+            </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentDiagnostics.map((d) => (
-                <div key={d.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
-                  <div>
-                    <div className="text-sm font-medium">
-                      {d.utilisateur.prenom} {d.utilisateur.nom}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(d.dateRealisation).toLocaleDateString("fr-FR")}
-                    </div>
+              {repartition.repartition.map((r) => {
+                const libelle = libelles[r.palier]
+                const part =
+                  r.effectif !== null && repartition.total > 0
+                    ? Math.round((r.effectif / repartition.total) * 100)
+                    : null
+                return (
+                  <div key={r.palier} className="flex items-center justify-between p-2 rounded-lg">
+                    <Badge variant={libelle.badge}>{libelle.texte}</Badge>
+                    <span className="text-sm font-medium">
+                      {r.effectif === null ? (
+                        <span className="text-muted-foreground">
+                          &lt; {repartition.seuil} — masqué
+                        </span>
+                      ) : (
+                        <>
+                          {r.effectif} diagnostic{r.effectif > 1 ? "s" : ""} ({part} %)
+                        </>
+                      )}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold">{d.score} pts</span>
-                    {getBadge(d.interpretation)}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
+              <p className="text-xs text-muted-foreground pt-2 border-t">
+                La répartition reste masquée tant que chaque niveau ne compte pas au moins{" "}
+                {repartition.seuil} résultats.
+              </p>
             </div>
           </CardContent>
         </Card>

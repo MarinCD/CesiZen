@@ -12,7 +12,10 @@ export async function GET() {
 
   // L'identité des créateurs (des comptes administrateurs) n'a pas à être
   // servie à un visiteur anonyme : c'est de la reconnaissance offerte.
-  const questionnaires = await getQuestionnaires({ includeCreateur: isAdmin })
+  const questionnaires = await getQuestionnaires({
+    includeCreateur: isAdmin,
+    includeBareme: isAdmin,
+  })
   return NextResponse.json(questionnaires)
 }
 
