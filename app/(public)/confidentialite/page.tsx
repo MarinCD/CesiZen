@@ -11,7 +11,7 @@ export default function ConfidentialitePage() {
   return (
     <LegalPage
       title="Politique de confidentialité"
-      updatedAt="18 août 2026"
+      updatedAt="19 août 2026"
       description="Cette politique explique quelles données sont utilisées par CESIZen, pourquoi elles le sont et comment exercer vos droits. Elle concerne l'environnement de recette du projet pédagogique."
     >
       <h2>1. Responsable du traitement</h2>
@@ -55,6 +55,14 @@ export default function ConfidentialitePage() {
               </td>
             </tr>
             <tr>
+              <td>Retours utilisateurs</td>
+              <td>
+                Nature du retour, caractère bloquant, page concernée, description et état de
+                traitement. Le retour est associé au compte uniquement lorsque la personne est
+                connectée.
+              </td>
+            </tr>
+            <tr>
               <td>Préférences locales</td>
               <td>
                 Réglages d'accessibilité et mémorisation de la fermeture du message d'information
@@ -92,6 +100,11 @@ export default function ConfidentialitePage() {
               <td>Intérêt légitime de l'éditeur à sécuriser le service.</td>
             </tr>
             <tr>
+              <td>Retours utilisateurs</td>
+              <td>Identifier les anomalies et améliorer le fonctionnement du service.</td>
+              <td>Intérêt légitime de l'éditeur à maintenir et améliorer le service.</td>
+            </tr>
+            <tr>
               <td>Demandes légales</td>
               <td>Répondre à une demande valable d'une autorité compétente.</td>
               <td>Obligation légale lorsqu'elle s'applique.</td>
@@ -117,6 +130,7 @@ export default function ConfidentialitePage() {
         <li>Compte : jusqu'à sa suppression ou après trois ans d'inactivité.</li>
         <li>Résultats enregistrés dans l'historique : vingt-quatre mois.</li>
         <li>Journaux de sécurité : douze mois.</li>
+        <li>Retours utilisateurs : douze mois après leur traitement.</li>
         <li>Compteurs de limitation des tentatives : deux jours au maximum.</li>
         <li>Session de connexion : deux heures, avec renouvellement pendant l'utilisation.</li>
         <li>Préférences locales : jusqu'à leur réinitialisation ou à l'effacement des données du navigateur.</li>

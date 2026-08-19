@@ -48,6 +48,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       informations: {
         select: { id: true, titre: true, categorie: true, datePublication: true },
       },
+      retoursUtilisateur: {
+        select: {
+          id: true,
+          type: true,
+          estBloquant: true,
+          emplacement: true,
+          pageUrl: true,
+          description: true,
+          statut: true,
+          dateCreation: true,
+          dateMiseAJour: true,
+        },
+      },
     },
   })
 

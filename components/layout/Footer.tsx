@@ -1,11 +1,12 @@
 import Link from "next/link"
 import { Heart } from "lucide-react"
+import { FeedbackDialog } from "@/components/feedback/FeedbackDialog"
 
 export function Footer() {
   return (
     <footer className="bg-gray-50 border-t mt-auto" role="contentinfo">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 font-bold text-lg text-primary mb-2">
               <Heart className="h-5 w-5" aria-hidden="true" />
@@ -31,6 +32,14 @@ export function Footer() {
               <li><Link href="/mentions-legales" className="hover:text-foreground">Mentions légales</Link></li>
               <li><Link href="/cgu" className="hover:text-foreground">CGU</Link></li>
             </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-sm mb-3">Votre avis</h3>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Une idée ou un problème rencontré sur le site ?
+            </p>
+            <FeedbackDialog />
           </div>
         </div>
 
