@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma"
 import { logAudit } from "@/lib/audit"
 import { clientIp } from "@/lib/rateLimit"
 import bcrypt from "bcryptjs"
+import * as Sentry from "@sentry/nextjs"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -123,6 +124,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     if (error?.code === "P2002") {
       return NextResponse.json({ error: "Cet email est déjà utilisé" }, { status: 409 })
     }
+    Sentry.captureException(error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -151,7 +153,8 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       metadata: { parAdmin: !isSelfDelete },
     })
     return NextResponse.json({ message: "Compte supprimé" })
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
