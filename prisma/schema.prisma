@@ -13,16 +13,27 @@ enum Role {
   ADMINISTRATEUR
 }
 
+enum TypeRetourUtilisateur {
+  PROPOSITION
+  ANOMALIE
+}
+
+enum StatutRetourUtilisateur {
+  NOUVEAU
+  EN_COURS
+  TRAITE
+}
+
 model Utilisateur {
-  id               Int       @id @default(autoincrement())
-  nom              String?
-  prenom           String?
-  email            String    @unique
-  motDePasse       String
-  role             Role      @default(UTILISATEUR)
-  dateCreation     DateTime  @default(now())
-  derniereActivite DateTime  @default(now())
-  consentementRGPD Boolean   @default(false)
+  id                  Int       @id @default(autoincrement())
+  nom                 String?
+  prenom              String?
+  email               String    @unique
+  motDePasse          String
+  role                Role      @default(UTILISATEUR)
+  dateCreation        DateTime  @default(now())
+  derniereActivite    DateTime  @default(now())
+  consentementRGPD    Boolean   @default(false)
   // Invalide les jetons de session émis avant cette date (cf. callback jwt).
   motDePasseModifieLe DateTime?
 
@@ -30,14 +41,15 @@ model Utilisateur {
   questionnaires      Questionnaire[]
   resultatsDiagnostic ResultatDiagnostic[]
   trackerEmotions     TrackerEmotion[]
+  retoursUtilisateur  RetourUtilisateur[]
 
   @@map("utilisateur")
 }
 
 model Information {
-  id              Int       @id @default(autoincrement())
+  id              Int         @id @default(autoincrement())
   titre           String
-  texte           String    @db.Text
+  texte           String      @db.Text
   categorie       String?
   datePublication DateTime?
   idCreateur      Int
@@ -47,12 +59,12 @@ model Information {
 }
 
 model Questionnaire {
-  id           Int       @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   titre        String
-  description  String?   @db.Text
-  dateCreation DateTime  @default(now())
+  description  String?      @db.Text
+  dateCreation DateTime     @default(now())
   idCreateur   Int
-  createur     Utilisateur   @relation(fields: [idCreateur], references: [id], onDelete: Cascade)
+  createur     Utilisateur  @relation(fields: [idCreateur], references: [id], onDelete: Cascade)
   questions    Question[]
   diagnostics  Diagnostic[]
 
@@ -60,11 +72,11 @@ model Questionnaire {
 }
 
 model Diagnostic {
-  id              Int           @id @default(autoincrement())
+  id              Int                  @id @default(autoincrement())
   nom             String
-  description     String?       @db.Text
+  description     String?              @db.Text
   questionnaireId Int
-  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  questionnaire   Questionnaire        @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
   questions       Question[]
   resultats       ResultatDiagnostic[]
 
@@ -143,4 +155,23 @@ model TrackerEmotion {
   utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@map("tracker_emotion")
+}
+
+model RetourUtilisateur {
+  id            Int                     @id @default(autoincrement())
+  type          TypeRetourUtilisateur
+  estBloquant   Boolean                 @default(false)
+  emplacement   String
+  pageUrl       String?                 @db.VarChar(500)
+  description   String                  @db.Text
+  statut        StatutRetourUtilisateur @default(NOUVEAU)
+  dateCreation  DateTime                @default(now())
+  dateMiseAJour DateTime                @updatedAt
+  utilisateurId Int?
+  utilisateur   Utilisateur?            @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([statut, dateCreation])
+  @@index([type, estBloquant])
+  @@index([utilisateurId])
+  @@map("retour_utilisateur")
 }

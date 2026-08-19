@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import Link from "next/link"
-import { LayoutDashboard, Users, FileText, ClipboardList, Shield, ShieldAlert } from "lucide-react"
+import { LayoutDashboard, Users, FileText, ClipboardList, MessageSquareWarning, Shield } from "lucide-react"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users },
     { href: "/admin/informations", label: "Articles", icon: FileText },
     { href: "/admin/questionnaires", label: "Questionnaires", icon: ClipboardList },
-    { href: "/admin/securite", label: "Cybersécurité", icon: ShieldAlert },
+    { href: "/admin/retours", label: "Retours utilisateurs", icon: MessageSquareWarning },
   ]
 
   return (
