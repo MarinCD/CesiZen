@@ -10,6 +10,7 @@ import { informationSchema } from "@/lib/validations/informationSchema"
 import { parseId } from "@/lib/validations/params"
 import { logAudit } from "@/lib/audit"
 import { clientIp } from "@/lib/rateLimit"
+import * as Sentry from "@sentry/nextjs"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -55,6 +56,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     if (error?.code === "P2025") {
       return NextResponse.json({ error: "Introuvable" }, { status: 404 })
     }
+    Sentry.captureException(error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -85,6 +87,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     if (error?.code === "P2025") {
       return NextResponse.json({ error: "Introuvable" }, { status: 404 })
     }
+    Sentry.captureException(error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
