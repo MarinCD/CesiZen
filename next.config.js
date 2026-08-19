@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
+// next.config.js utilise CommonJS, comme la configuration existante du projet.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { withSentryConfig } = require("@sentry/nextjs")
+
 const isProd = process.env.NODE_ENV === "production"
+const uploadSentrySourceMaps = process.env.SENTRY_UPLOAD_SOURCEMAPS === "1"
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -24,4 +29,24 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(nextConfig, {
+  org: "cesi-3k",
+  project: "javascript-nextjs",
+  silent: !process.env.CI,
+  telemetry: false,
+  widenClientFileUpload: true,
+  tunnelRoute: "/monitoring",
+  sourcemaps: {
+    // Les source maps contiennent le code source : leur envoi doit être
+    // explicitement autorisé dans l'environnement de build de la CI.
+    disable: !uploadSentrySourceMaps,
+  },
+  release: {
+    create: uploadSentrySourceMaps,
+  },
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+})

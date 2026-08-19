@@ -5,6 +5,7 @@ import { getAllUsers, createUser } from "@/lib/services/userService"
 import { registerSchema } from "@/lib/validations/userSchema"
 import { clientIp, rateLimit } from "@/lib/rateLimit"
 import { logAudit } from "@/lib/audit"
+import * as Sentry from "@sentry/nextjs"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
     if (error.code === "P2002") {
       return NextResponse.json({ error: "Cet email est déjà utilisé" }, { status: 409 })
     }
+    Sentry.captureException(error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }

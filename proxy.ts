@@ -101,5 +101,7 @@ export default async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"],
+  // Le tunnel Sentry doit contourner le proxy ; sinon ses enveloppes peuvent
+  // être interrompues avant la réécriture créée par withSentryConfig.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|monitoring).*)"],
 }
